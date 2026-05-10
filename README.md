@@ -55,19 +55,25 @@
 
 ```
 /
+├── README.md
+├── database/
+│   ├── schema.sql           # 建表DDL（含约束与索引）
+│   ├── seed_data.sql        # 初始测试数据（106条）
+│   ├── queries.sql          # 核心查询验证脚本
+│   └── test_report.md       # 自我测试记录
 ├── docs/
-│   ├── 需求分析/           # 第一阶段报告
+│   ├── 需求分析/          
 │   │   ├── 需求说明.pdf
 │   │   └── 需求说明.md
-│   ├── 关系模式设计/       # 第二阶段报告
+│   ├── 关系模式设计/      
 │   │   ├── 关系模式设计.pdf
 │   │   └── 关系模式设计.md
-│   ├── 数据库逻辑结构/       # 第三阶段报告
+│   ├── 数据库逻辑结构/      
 │   │   ├── 数据库逻辑结构.pdf
 │   │   └── 数据库逻辑结构.md
 │   └── ER图/
 │       └── ER图.png
-└── README.md               # 本文件
+└── src/                     # 前后端代码（开发中）
 ```
 
 ## 当前进度
@@ -75,9 +81,74 @@
 - ✅ 第一阶段：需求分析与概念设计（已完成）
 - ✅ 第二阶段：关系模式设计（已完成）
 - ✅ 第三阶段：数据库逻辑结构定稿（已完成）
-- ⏳ 第四阶段：数据库实现
+- ✅ 第四阶段：数据库实现 （已完成）
 - ⏳ 第五阶段：系统核心功能开发
 - ⏳ 第六阶段：最终完善
+
+## 数据库部署
+
+### 环境要求
+
+- MySQL 8.0 或更高版本
+- 字符集：utf8mb4
+
+### 部署步骤
+
+1. 克隆仓库到本地：
+   ```bash
+   git clone https://github.com/hdh-fall/Fudan-Campus-Info-System.git
+   cd Fudan-Campus-Info-System
+   ```
+
+2. 执行建表脚本（创建数据库及全部10张表，含约束和索引）：
+   ```bash
+   mysql -u root -p < database/schema.sql
+   ```
+
+3. 导入初始测试数据（106条记录，覆盖所有表）：
+   ```bash
+   mysql -u root -p < database/seed_data.sql
+   ```
+
+4. 运行验证查询（确认数据正确性和查询功能）：
+   ```bash
+   mysql -u root -p fudan_campus_info < database/queries.sql
+   ```
+
+### 快速验证
+
+部署完成后，可通过以下查询快速确认数据导入情况：
+
+```sql
+USE fudan_campus_info;
+
+-- 查看各表记录数（预期合计 106 条）
+SELECT 'department' AS table_name, COUNT(*) AS cnt FROM department
+UNION ALL SELECT 'user', COUNT(*) FROM user
+UNION ALL SELECT 'campus', COUNT(*) FROM campus
+UNION ALL SELECT 'building', COUNT(*) FROM building
+UNION ALL SELECT 'facility', COUNT(*) FROM facility
+UNION ALL SELECT 'teacher', COUNT(*) FROM teacher
+UNION ALL SELECT 'course', COUNT(*) FROM course
+UNION ALL SELECT 'course_teacher', COUNT(*) FROM course_teacher
+UNION ALL SELECT 'event', COUNT(*) FROM event
+UNION ALL SELECT 'query_record', COUNT(*) FROM query_record;
+```
+
+预期输出：
+
+| table_name | cnt |
+|------------|-----|
+| department | 8 |
+| user | 10 |
+| campus | 4 |
+| building | 12 |
+| facility | 20 |
+| teacher | 12 |
+| course | 12 |
+| course_teacher | 20 |
+| event | 10 |
+| query_record | 20 |
 
 ## 小组信息
 
@@ -86,4 +157,4 @@
 
 ## 运行方式
 
-> 后续完成后补充启动命令与环境配置
+> 后续完成系统开发后补充前后端启动命令与环境配置说明。
