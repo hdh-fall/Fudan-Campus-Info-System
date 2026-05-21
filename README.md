@@ -154,7 +154,7 @@ source database/seed_data.sql
 cd src/fudan-campus-backend
 
 # 使用Maven运行
-mvn spring-boot:run
+.\mvnw.cmd spring-boot:run
 
 # 或者先编译再运行
 mvn clean package

@@ -10,6 +10,7 @@
             <el-menu-item index="facility">校园设施</el-menu-item>
             <el-menu-item index="course">课程教师</el-menu-item>
             <el-menu-item index="event">校园活动</el-menu-item>
+            <el-menu-item index="analytics">数据分析</el-menu-item>
             <el-menu-item index="user">个人中心</el-menu-item>
             <el-menu-item v-if="isAdmin" index="admin">管理后台</el-menu-item>
           </el-menu>
@@ -35,6 +36,7 @@ import CampusView from './views/CampusView.vue'
 import FacilityView from './views/FacilityView.vue'
 import CourseView from './views/CourseView.vue'
 import EventView from './views/EventView.vue'
+import AnalyticsView from './views/AnalyticsView.vue'
 import UserView from './views/UserView.vue'
 import AdminView from './views/AdminView.vue'
 
@@ -46,6 +48,7 @@ export default {
     FacilityView,
     CourseView,
     EventView,
+    AnalyticsView,
     UserView,
     AdminView
   },
@@ -70,6 +73,7 @@ export default {
       facility: 'FacilityView',
       course: 'CourseView',
       event: 'EventView',
+      analytics: 'AnalyticsView',
       user: 'UserView',
       admin: 'AdminView'
     }

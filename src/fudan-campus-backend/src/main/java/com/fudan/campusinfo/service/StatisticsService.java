@@ -157,4 +157,61 @@ public class StatisticsService {
         
         return overview;
     }
+    
+    /**
+     * 获取每日查询趋势（最近N天）
+     */
+    public List<Map<String, Object>> getDailyQueryTrend(int days) {
+        List<Object[]> results = queryRecordRepository.findDailyQueryTrend(days);
+        List<Map<String, Object>> trend = new ArrayList<>();
+        
+        for (Object[] row : results) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("date", row[0].toString());
+            item.put("count", row[1]);
+            item.put("uniqueUsers", row[2]);
+            trend.add(item);
+        }
+        
+        return trend;
+    }
+    
+    /**
+     * 获取活跃用户排行
+     */
+    public List<Map<String, Object>> getActiveUsers(int limit) {
+        List<Object[]> results = queryRecordRepository.findActiveUsers(limit);
+        List<Map<String, Object>> users = new ArrayList<>();
+        
+        for (Object[] row : results) {
+            Map<String, Object> user = new HashMap<>();
+            user.put("userId", row[0]);
+            user.put("username", row[1]);
+            user.put("name", row[2]);
+            user.put("totalQueries", row[3]);
+            user.put("categoriesExplored", row[4]);
+            users.add(user);
+        }
+        
+        return users;
+    }
+    
+    /**
+     * 获取校区设施热度统计
+     */
+    public List<Map<String, Object>> getCampusFacilityPopularity() {
+        List<Object[]> results = buildingRepository.findCampusFacilityStats();
+        List<Map<String, Object>> stats = new ArrayList<>();
+        
+        for (Object[] row : results) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("campusId", row[0]);
+            item.put("campusName", row[1]);
+            item.put("buildingCount", row[2]);
+            item.put("facilityCount", row[3]);
+            stats.add(item);
+        }
+        
+        return stats;
+    }
 }

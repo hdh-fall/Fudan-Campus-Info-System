@@ -365,6 +365,32 @@ public class CampusInfoController {
     public ResponseEntity<Map<String, Object>> getOverviewStatistics() {
         return ResponseEntity.ok(statisticsService.getOverviewStatistics());
     }
+    
+    /**
+     * 获取每日查询趋势（最近N天，默认7天）
+     */
+    @GetMapping("/statistics/daily-trend")
+    public ResponseEntity<List<Map<String, Object>>> getDailyQueryTrend(
+            @RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(statisticsService.getDailyQueryTrend(days));
+    }
+    
+    /**
+     * 获取活跃用户排行（默认前10名）
+     */
+    @GetMapping("/statistics/active-users")
+    public ResponseEntity<List<Map<String, Object>>> getActiveUsers(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(statisticsService.getActiveUsers(limit));
+    }
+    
+    /**
+     * 获取校区设施热度统计
+     */
+    @GetMapping("/statistics/campus-facility-popularity")
+    public ResponseEntity<List<Map<String, Object>>> getCampusFacilityPopularity() {
+        return ResponseEntity.ok(statisticsService.getCampusFacilityPopularity());
+    }
 
     // ==================== CSV批量导入接口 ====================
     
