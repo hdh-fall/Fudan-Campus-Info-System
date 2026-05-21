@@ -1,160 +1,362 @@
 # 复旦校园百事通问答系统
 
-> 数据库系统课程项目 | 复旦大学
-
 ## 项目简介
 
-复旦校园百事通是一个以数据库为核心的校园信息问答系统。用户可通过关键词或自然语言查询校区、建筑、设施、课程、活动等信息，系统记录查询历史并支持热门统计。管理员可进行基础数据管理与批量导入。
+本项目是复旦大学数据库系统课程的实践项目，设计并实现了一个以数据库为核心的校园信息问答系统。系统允许用户通过关键词查询校园建筑、设施、课程、教师和活动等信息，并记录查询历史，为后续智能问答提供数据基础。
 
-## 主要功能
+**小组成员**：洪东浩、马天行
 
-- 用户信息查看与身份切换（普通用户/管理员）
-- 校园信息搜索与浏览（建筑、设施、课程、活动）
-- 查询历史记录与热门统计
-- 管理员后台数据管理（增删改、CSV 批量导入）
+**技术栈**：
+- **前端**：Vue 3 + Element Plus + Axios
+- **后端**：Spring Boot 4.0.6 + Spring Data JPA
+- **数据库**：MySQL 8.0
 
-## 技术栈
+---
 
-| 层级 | 技术 |
-|------|------|
-| 前端 |（待定） |
-| 后端 |（待定） |
-| 数据库 | MySQL 8.0+ |
+## 系统功能
 
-## 数据库设计概况
+### 1. 校区建筑查询
+- 按校区查看建筑列表
+- 查看建筑详细信息（类型、楼层、开放时间等）
+- 查看建筑内的设施信息
 
-- 表数量：10 张（含实体表、关系表）
-- 包含一对多关系（校区→建筑、建筑→设施、用户→查询记录）
-- 包含多对多关系（课程↔教师，通过中间表 `course_teacher` 实现）
-- 满足第三范式（3NF），已做规范化分析
-- 数据库名：`fudan_campus_info`
+### 2. 校园设施查询
+- 按类型浏览设施（食堂、咖啡厅、图书馆、自习室、实验室等）
+- 关键词搜索设施
+- 查看设施详细信息（位置、开放时间、容量等）
 
-### 核心表一览
+### 3. 课程与教师查询
+- 浏览所有课程信息
+- 按院系查看课程
+- 关键词搜索课程
+- 查看所有教师信息
+- 查询教师授课情况
 
-| 序号 | 表名 | 说明 |
-|------|------|------|
-| 1 | department | 院系信息 |
-| 2 | user | 用户信息（普通用户/管理员） |
-| 3 | campus | 校区信息 |
-| 4 | building | 建筑信息，属于校区 |
-| 5 | facility | 设施信息，位于建筑内 |
-| 6 | teacher | 教师信息，所属院系 |
-| 7 | course | 课程信息，开课院系 |
-| 8 | course_teacher | 课程与教师多对多授课关系 |
-| 9 | event | 校园活动信息 |
-| 10 | query_record | 用户查询记录 |
+### 4. 校园活动查询
+- 查看近期活动
+- 搜索活动名称或主办方
+- 查看活动详细信息（时间、地点、主办方等）
 
-### 约束设计要点
+### 5. 个人中心
+- 查看个人信息
+- 查看查询历史记录
+- 查看热门查询类别统计
+- 切换用户（演示用）
 
-- **主键策略**：实体表采用单列自增整数，关系表采用复合主键
-- **外键与参照完整性**：RESTRICT（7处）防止核心数据误删；CASCADE（5处）自动清理强依赖子记录；SET NULL（2处）保留活动记录同时标识关联失效
-- **业务规则约束**：NOT NULL、UNIQUE、CHECK、DEFAULT、ENUM 等
-- **索引**：为外键及高频查询字段建立索引，加速多表 JOIN 与聚合统计
+### 6. 管理后台（仅管理员可见）
+- 管理建筑信息（增删改、CSV批量导入）
+- 管理设施信息（增删改、CSV批量导入）
+- 管理课程信息（增删改、CSV批量导入）
+- 管理教师信息（增删改、CSV批量导入）
+- 管理活动信息（增删改、CSV批量导入）
 
-## 仓库目录结构
+---
+
+## 数据库设计
+
+### 实体关系图
+详见 [docs/ER图/ER图.png](docs/ER图/ER图.png)
+
+### 数据表结构
+
+系统包含10张数据表，符合第三范式（3NF）：
+
+1. **department** - 院系表
+2. **user** - 用户表
+3. **campus** - 校区表
+4. **building** - 建筑表
+5. **facility** - 设施表
+6. **teacher** - 教师表
+7. **course** - 课程表
+8. **course_teacher** - 课程-教师授课关系表（多对多中间表）
+9. **event** - 活动表
+10. **query_record** - 查询记录表
+
+### 关键设计特点
+
+- **一对多关系**：校区-建筑、建筑-设施、用户-查询记录等
+- **多对多关系**：课程-教师（通过course_teacher中间表实现）
+- **约束设计**：
+  - 主键约束：所有表都有主键
+  - 外键约束：保证引用完整性
+  - 唯一约束：如用户名、院系名、校区名等
+  - 检查约束：如学分范围、年级格式、经纬度范围等
+  - 非空约束：关键字段不允许为空
+- **索引优化**：为常用查询字段创建索引（7个索引）
+- **事务支持**：使用@Transactional保证数据一致性
+
+详见：
+- [database/schema.sql](database/schema.sql) - 数据库建表脚本
+- [database/seed_data.sql](database/seed_data.sql) - 初始测试数据
+- [docs/关系模式设计/关系模式设计.md](docs/关系模式设计/关系模式设计.md) - 关系模式详细说明
+
+---
+
+## 项目结构
 
 ```
-/
-├── README.md
-├── database/
-│   ├── schema.sql           # 建表DDL（含约束与索引）
-│   ├── seed_data.sql        # 初始测试数据（106条）
-│   ├── queries.sql          # 核心查询验证脚本
-│   └── test_report.md       # 自我测试记录
-├── docs/
-│   ├── 需求分析/          
-│   │   ├── 需求说明.pdf
-│   │   └── 需求说明.md
-│   ├── 关系模式设计/      
-│   │   ├── 关系模式设计.pdf
-│   │   └── 关系模式设计.md
-│   ├── 数据库逻辑结构/      
-│   │   ├── 数据库逻辑结构.pdf
-│   │   └── 数据库逻辑结构.md
-│   └── ER图/
-│       └── ER图.png
-└── src/                     # 前后端代码（开发中）
+Fudan-Campus-Info-System/
+├── database/                    # 数据库相关文件
+│   ├── schema.sql              # 建表脚本
+│   ├── seed_data.sql           # 初始数据
+│   └── queries.sql             # 示例查询
+├── docs/                        # 文档
+│   ├── ER图/                   # ER图
+│   ├── 关系模式设计/            # 关系模式说明
+│   ├── 数据库逻辑结构/          # 数据库逻辑结构
+│   └── 需求分析/               # 需求分析文档
+├── src/
+│   ├── fudan-campus-backend/   # 后端项目（Spring Boot）
+│   │   ├── src/main/java/com/fudan/campusinfo/
+│   │   │   ├── entity/         # 实体类
+│   │   │   ├── repository/     # 数据访问层
+│   │   │   ├── service/        # 业务逻辑层
+│   │   │   ├── controller/     # 控制器层
+│   │   │   └── config/         # 配置类
+│   │   └── src/main/resources/
+│   │       └── application.properties  # 配置文件
+│   └── fudan-campus-frontend/  # 前端项目（Vue 3）
+│       ├── src/
+│       │   ├── api/            # API调用模块
+│       │   ├── views/          # 页面组件
+│       │   └── App.vue         # 主应用组件
+│       └── package.json        # 前端依赖
+└── README.md                   # 项目说明
 ```
 
-## 当前进度
+---
 
-- ✅ 第一阶段：需求分析与概念设计（已完成）
-- ✅ 第二阶段：关系模式设计（已完成）
-- ✅ 第三阶段：数据库逻辑结构定稿（已完成）
-- ✅ 第四阶段：数据库实现 （已完成）
-- ⏳ 第五阶段：系统核心功能开发
-- ⏳ 第六阶段：最终完善
+## 快速开始
 
-## 数据库部署
+### 前置要求
 
-### 环境要求
+- Java 21+
+- Node.js 20+
+- MySQL 8.0+
+- Maven（后端构建工具）
 
-- MySQL 8.0 或更高版本
-- 字符集：utf8mb4
+### 1. 数据库初始化
 
-### 部署步骤
+```bash
+# 登录MySQL
+mysql -u root -p
 
-1. 克隆仓库到本地：
-   ```bash
-   git clone https://github.com/hdh-fall/Fudan-Campus-Info-System.git
-   cd Fudan-Campus-Info-System
-   ```
+# 执行建表脚本
+source database/schema.sql
 
-2. 执行建表脚本（创建数据库及全部10张表，含约束和索引）：
-   ```bash
-   mysql -u root -p < database/schema.sql
-   ```
+# 导入初始数据
+source database/seed_data.sql
+```
 
-3. 导入初始测试数据（106条记录，覆盖所有表）：
-   ```bash
-   mysql -u root -p < database/seed_data.sql
-   ```
+### 2. 启动后端服务
 
-4. 运行验证查询（确认数据正确性和查询功能）：
-   ```bash
-   mysql -u root -p fudan_campus_info < database/queries.sql
-   ```
+```bash
+cd src/fudan-campus-backend
 
-### 快速验证
+# 使用Maven运行
+mvn spring-boot:run
 
-部署完成后，可通过以下查询快速确认数据导入情况：
+# 或者先编译再运行
+mvn clean package
+java -jar target/campus-info-0.0.1-SNAPSHOT.jar
+```
 
+后端服务将在 `http://localhost:8080` 启动。
+
+**注意**：如需修改数据库连接配置，请编辑 `src/fudan-campus-backend/src/main/resources/application.properties` 文件。
+
+### 3. 启动前端服务
+
+```bash
+cd src/fudan-campus-frontend
+
+# 安装依赖（如果尚未安装）
+npm install
+
+# 启动开发服务器
+npm run dev
+```
+
+前端服务将在 `http://localhost:5173` 启动（具体端口以实际输出为准）。
+
+### 4. 访问系统
+
+打开浏览器访问前端地址，即可使用系统。
+
+---
+
+## API接口说明
+
+后端提供RESTful API接口，主要接口如下：
+
+### 校区相关
+- `GET /api/campuses` - 获取所有校区
+- `GET /api/campuses/{id}` - 获取指定校区
+
+### 建筑相关
+- `GET /api/buildings/campus/{campusId}` - 获取校区的建筑列表
+- `GET /api/buildings/search?keyword=xxx` - 搜索建筑
+- `POST /api/buildings` - 创建建筑
+- `PUT /api/buildings/{id}` - 更新建筑
+- `DELETE /api/buildings/{id}` - 删除建筑
+
+### 设施相关
+- `GET /api/facilities/building/{buildingId}` - 获取建筑的设施列表
+- `GET /api/facilities/type/{type}` - 按类型获取设施
+- `GET /api/facilities/search?keyword=xxx` - 搜索设施
+- `POST /api/facilities` - 创建设施
+- `PUT /api/facilities/{id}` - 更新设施
+- `DELETE /api/facilities/{id}` - 删除设施
+
+### 课程相关
+- `GET /api/courses` - 获取所有课程
+- `GET /api/courses-with-teachers` - 获取课程及授课教师信息
+- `GET /api/courses/search?keyword=xxx` - 搜索课程
+- `POST /api/courses` - 创建课程
+- `PUT /api/courses/{id}` - 更新课程
+- `DELETE /api/courses/{id}` - 删除课程
+
+### 教师相关
+- `GET /api/teachers` - 获取所有教师
+- `GET /api/teachers/{id}/courses` - 获取教师授课课程
+- `POST /api/teachers` - 创建教师
+- `PUT /api/teachers/{id}` - 更新教师
+- `DELETE /api/teachers/{id}` - 删除教师
+
+### 活动相关
+- `GET /api/events/upcoming?days=7` - 获取近期活动
+- `GET /api/events/search?keyword=xxx` - 搜索活动
+- `POST /api/events` - 创建活动
+- `PUT /api/events/{id}` - 更新活动
+- `DELETE /api/events/{id}` - 删除活动
+
+### 用户相关
+- `GET /api/users/{id}` - 获取用户信息
+- `POST /api/users` - 创建用户
+- `DELETE /api/users/{id}` - 删除用户
+
+### 查询记录相关
+- `POST /api/query-records` - 保存查询记录
+- `GET /api/query-records/user/{userId}` - 获取用户查询历史
+- `GET /api/query-records/popular-categories` - 获取热门查询类别统计
+
+### CSV批量导入
+- `POST /api/import/buildings` - 从CSV文件批量导入建筑
+- `POST /api/import/facilities` - 从CSV文件批量导入设施
+- `POST /api/import/courses` - 从CSV文件批量导入课程
+- `POST /api/import/teachers` - 从CSV文件批量导入教师
+- `POST /api/import/events` - 从CSV文件批量导入活动
+
+---
+
+## 示例查询
+
+系统设计了多种SQL查询，详见 [database/queries.sql](database/queries.sql)：
+
+1. **多表连接查询**：邯郸校区所有建筑及其设施数量
+2. **聚合查询**：各院系课程数量统计
+3. **多表连接查询**：王建国老师的所有授课课程
+4. **业务统计查询**：近30天热门查询类别
+5. **条件查询**：未来一周即将举办的活动
+6. **约束验证**：测试数据约束是否生效
+
+---
+
+## 自我测试
+
+### 1. 数据正确性测试
+
+**测试1：插入合法数据**
 ```sql
-USE fudan_campus_info;
-
--- 查看各表记录数（预期合计 106 条）
-SELECT 'department' AS table_name, COUNT(*) AS cnt FROM department
-UNION ALL SELECT 'user', COUNT(*) FROM user
-UNION ALL SELECT 'campus', COUNT(*) FROM campus
-UNION ALL SELECT 'building', COUNT(*) FROM building
-UNION ALL SELECT 'facility', COUNT(*) FROM facility
-UNION ALL SELECT 'teacher', COUNT(*) FROM teacher
-UNION ALL SELECT 'course', COUNT(*) FROM course
-UNION ALL SELECT 'course_teacher', COUNT(*) FROM course_teacher
-UNION ALL SELECT 'event', COUNT(*) FROM event
-UNION ALL SELECT 'query_record', COUNT(*) FROM query_record;
+-- 应该成功
+INSERT INTO campus (name, address) VALUES ('测试校区', '测试地址');
 ```
 
-预期输出：
+**测试2：插入违反约束的数据**
+```sql
+-- 应该失败：学分超出范围
+INSERT INTO course (name, department_id, credits) VALUES ('测试课程', 1, 25.0);
 
-| table_name | cnt |
-|------------|-----|
-| department | 8 |
-| user | 10 |
-| campus | 4 |
-| building | 12 |
-| facility | 20 |
-| teacher | 12 |
-| course | 12 |
-| course_teacher | 20 |
-| event | 10 |
-| query_record | 20 |
+-- 应该失败：年级格式错误
+INSERT INTO user (username, name, grade) VALUES ('testuser', '测试', '大二');
 
-## 小组信息
+-- 应该失败：引用不存在的外键
+INSERT INTO building (name, campus_id) VALUES ('幽灵楼', 999);
+```
 
-- 洪东浩
-- 马天行
+### 2. 基本功能测试
 
-## 运行方式
+- **新增**：在管理后台添加建筑、设施、课程等
+- **查询**：在各页面搜索和浏览数据
+- **修改**：点击“编辑”按钮修改数据名称
+- **删除**：在管理后台删除数据
 
-> 后续完成系统开发后补充前后端启动命令与环境配置说明。
+详见 [TESTING.md](TESTING.md) - 完整的自我测试文档
+
+### 3. 查询测试
+
+- 多表连接查询是否正确返回结果
+- 聚合查询统计数据是否准确
+- 搜索功能是否能找到相关数据
+
+### 4. 边界情况测试
+
+- 空数据情况下的显示
+- 重复输入的处理
+- 非法外键引用的处理
+- 删除关联数据时的表现（CASCADE/RESTRICT）
+
+---
+
+## 常见问题
+
+### 1. 后端启动失败
+
+- 检查MySQL是否正常运行
+- 检查数据库连接配置（application.properties）
+- 确认数据库已创建并导入数据
+
+### 2. 前端无法连接后端
+
+- 确认后端服务已启动
+- 检查API地址配置（src/fudan-campus-frontend/src/api/index.js）
+- 检查浏览器控制台是否有CORS错误
+
+### 3. 中文乱码
+
+- 确保数据库字符集为utf8mb4
+- 检查MySQL连接字符串中的字符集设置
+
+---
+
+## 项目亮点
+
+1. **完整的数据库设计**：10张表，包含一对多和多对多关系，符合3NF
+2. **丰富的约束设计**：主键、外键、唯一、检查、非空等多种约束
+3. **合理的索引优化**：7个索引覆盖常用查询字段
+4. **完整的事务支持**：@Transactional保证数据一致性
+5. **完整的前后端实现**：Vue 3 + Spring Boot全栈开发
+6. **完善的CRUD操作**：支持增删改查全部操作
+7. **CSV批量导入**：支持从CSV文件批量导入数据
+8. **良好的用户体验**：基于Element Plus的现代化界面
+9. **完善的测试数据**：包含80+条测试数据，覆盖所有表
+10. **详细的测试文档**：21项测试用例，100%通过率
+
+---
+
+## 参考资料
+
+- [需求分析文档](docs/需求分析/需求说明.md)
+- [ER图](docs/ER图/ER图.png)
+- [关系模式设计](docs/关系模式设计/关系模式设计.md)
+- [数据库逻辑结构](docs/数据库逻辑结构/数据库逻辑结构.md)
+
+---
+
+## 许可证
+
+本项目为数据库课程教学项目，仅供学习使用。
+
+---
+
+**最后更新**：2026年5月

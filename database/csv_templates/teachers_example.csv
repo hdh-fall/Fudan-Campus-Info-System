@@ -1,0 +1,6 @@
+name,department_id,title,email,phone
+张三,1,教授,zhangsan@fudan.edu.cn,021-65640010
+李四,2,副教授,lisi@fudan.edu.cn,021-65640011
+王五,3,讲师,wangwu@fudan.edu.cn,021-65640012
+赵六,3,教授,zhaoliu@fudan.edu.cn,021-65640013
+陈七,4,副教授,chenqi@fudan.edu.cn,021-65640014
