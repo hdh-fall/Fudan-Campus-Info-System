@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import HomeView from './views/HomeView.vue'
 import CampusView from './views/CampusView.vue'
@@ -54,6 +54,8 @@ export default {
   },
   setup() {
     const activeMenu = ref('home')
+    // 添加一个触发器来强制更新 isAdmin
+    const userChangeTrigger = ref(0)
     
     // 获取当前用户信息
     const getCurrentUser = () => {
@@ -63,6 +65,8 @@ export default {
     
     // 检查是否为管理员
     const isAdmin = computed(() => {
+      // 依赖 userChangeTrigger 来触发重新计算
+      userChangeTrigger.value
       const user = getCurrentUser()
       return user && user.role === 'admin'
     })
@@ -95,6 +99,20 @@ export default {
     const navigateTo = (page) => {
       activeMenu.value = page
     }
+    
+    // 监听用户信息变化事件
+    const handleUserChange = () => {
+      userChangeTrigger.value++
+      console.log('用户信息已更新，当前是否为管理员:', isAdmin.value)
+    }
+    
+    onMounted(() => {
+      window.addEventListener('userChanged', handleUserChange)
+    })
+    
+    onUnmounted(() => {
+      window.removeEventListener('userChanged', handleUserChange)
+    })
     
     return {
       activeMenu,

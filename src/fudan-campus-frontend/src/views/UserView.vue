@@ -231,6 +231,9 @@ export default {
       switchAccountVisible.value = false
       ElMessage.success(`已切换到账号：${account.name}`)
       
+      // 触发自定义事件，通知 App.vue 更新 isAdmin
+      window.dispatchEvent(new CustomEvent('userChanged'))
+      
       // 重新加载该账号的数据
       loadQueryHistory()
       loadPopularCategories()

@@ -165,6 +165,25 @@ export default {
 
     onMounted(() => {
       loadCampuses()
+      
+      // 检查是否有从快速搜索传来的详情数据
+      const detailData = localStorage.getItem('viewDetailData')
+      if (detailData) {
+        try {
+          const parsed = JSON.parse(detailData)
+          if (parsed.category === '建筑') {
+            // 延迟执行，等待数据加载完成
+            setTimeout(() => {
+              viewBuildingDetail(parsed.data)
+              ElMessage.success(`正在查看建筑详情：${parsed.data.name}`)
+            }, 500)
+          }
+          // 清除已处理的详情数据
+          localStorage.removeItem('viewDetailData')
+        } catch (e) {
+          console.error('解析详情数据失败:', e)
+        }
+      }
     })
 
     return {

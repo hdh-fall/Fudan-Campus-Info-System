@@ -43,6 +43,7 @@
               :on-success="handleImportSuccess"
               :on-error="handleImportError"
               accept=".csv"
+              :show-file-list="false"
               style="display: inline-block; margin-right: 10px;"
             >
               <el-button type="success">
@@ -115,6 +116,7 @@
               :on-success="handleImportSuccess"
               :on-error="handleImportError"
               accept=".csv"
+              :show-file-list="false"
               style="display: inline-block; margin-right: 10px;"
             >
               <el-button type="success">
@@ -182,6 +184,7 @@
               :on-success="handleImportSuccess"
               :on-error="handleImportError"
               accept=".csv"
+              :show-file-list="false"
               style="display: inline-block; margin-right: 10px;"
             >
               <el-button type="success">
@@ -249,6 +252,7 @@
               :on-success="handleImportSuccess"
               :on-error="handleImportError"
               accept=".csv"
+              :show-file-list="false"
               style="display: inline-block; margin-right: 10px;"
             >
               <el-button type="success">
@@ -316,6 +320,7 @@
               :on-success="handleImportSuccess"
               :on-error="handleImportError"
               accept=".csv"
+              :show-file-list="false"
               style="display: inline-block; margin-right: 10px;"
             >
               <el-button type="success">
@@ -354,6 +359,93 @@
           </el-table>
         </el-card>
       </el-tab-pane>
+
+      <!-- 课程-教师关联管理 -->
+      <el-tab-pane name="courseTeacher">
+        <template #label>
+          <span>🔗 课程-教师关联</span>
+        </template>
+        
+        <el-card>
+          <template #header>
+            <div class="card-header">
+              <span>课程-教师关联列表</span>
+              <el-tag size="small" type="info">{{ courseTeachers.length }} 条关联</el-tag>
+            </div>
+          </template>
+          
+          <div style="margin-bottom: 20px;">
+            <el-button type="primary" @click="showAddDialog('courseTeacher')" style="margin-right: 10px;">
+              <el-icon><Plus /></el-icon>
+              添加关联
+            </el-button>
+            <el-upload
+              action="http://localhost:8080/api/import/course-teachers"
+              :on-success="handleCSVImportSuccess"
+              :on-error="handleCSVImportError"
+              :before-upload="beforeCSVUpload"
+              accept=".csv"
+              :show-file-list="false"
+              style="display: inline-block; margin-right: 10px;"
+            >
+              <el-button type="success">
+                <el-icon><Upload /></el-icon>
+                CSV导入
+              </el-button>
+            </el-upload>
+            <el-button type="info" @click="loadCourseTeachers">
+              <el-icon><Refresh /></el-icon>
+              刷新
+            </el-button>
+          </div>
+          
+          <el-empty v-if="courseTeachers.length === 0 && !loading" description="暂无课程-教师关联数据" :image-size="100" />
+          
+          <el-table v-else :data="courseTeachers" style="width: 100%" v-loading="loading" stripe>
+            <el-table-column label="课程名称" min-width="180">
+              <template #default="scope">
+                {{ scope.row.course?.name || `课程ID: ${scope.row.courseId}` }}
+              </template>
+            </el-table-column>
+            <el-table-column label="教师姓名" width="120">
+              <template #default="scope">
+                {{ scope.row.teacher?.name || `教师ID: ${scope.row.teacherId}` }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="semester" label="学期" width="150">
+              <template #default="scope">
+                <el-tag size="small" type="warning">{{ scope.row.semester }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="role" label="角色" width="100">
+              <template #default="scope">
+                <el-tag size="small" type="success">{{ scope.row.role || '主讲' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="remarks" label="备注" min-width="150" show-overflow-tooltip>
+              <template #default="scope">
+                {{ scope.row.remarks || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="180" fixed="right">
+              <template #default="scope">
+                <el-button type="primary" size="small" @click="handleEdit('courseTeacher', scope.row)">
+                  <el-icon><Edit /></el-icon>
+                  编辑
+                </el-button>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  @click="handleDeleteCourseTeacher(scope.row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
     </div>
 
@@ -381,6 +473,24 @@
           <el-form-item label="楼层数">
             <el-input-number v-model="editForm.floors" :min="1" :max="100" style="width: 100%;" />
           </el-form-item>
+          <el-form-item label="开放时间">
+            <el-time-picker
+              v-model="editForm.openTime"
+              format="HH:mm"
+              value-format="HH:mm:ss"
+              placeholder="选择时间"
+              style="width: 100%;"
+            />
+          </el-form-item>
+          <el-form-item label="关闭时间">
+            <el-time-picker
+              v-model="editForm.closeTime"
+              format="HH:mm"
+              value-format="HH:mm:ss"
+              placeholder="选择时间"
+              style="width: 100%;"
+            />
+          </el-form-item>
           <el-form-item label="描述">
             <el-input v-model="editForm.description" type="textarea" :rows="3" placeholder="请输入描述" />
           </el-form-item>
@@ -404,6 +514,9 @@
               />
             </el-select>
           </el-form-item>
+          <el-form-item label="开放时间">
+            <el-input v-model="editForm.openTime" placeholder="例如：08:00-22:00" />
+          </el-form-item>
           <el-form-item label="容量">
             <el-input-number v-model="editForm.capacity" :min="1" style="width: 100%;" />
           </el-form-item>
@@ -412,6 +525,9 @@
           </el-form-item>
           <el-form-item label="位置描述">
             <el-input v-model="editForm.locationDesc" placeholder="例如：一楼、二楼" />
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="editForm.description" type="textarea" :rows="3" placeholder="请输入设施描述" />
           </el-form-item>
         </template>
 
@@ -472,13 +588,23 @@
           <el-form-item label="活动名称">
             <el-input v-model="editForm.name" placeholder="请输入活动名称" />
           </el-form-item>
+          <el-form-item label="活动时间">
+            <el-date-picker
+              v-model="editForm.eventTime"
+              type="datetime"
+              placeholder="选择日期时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 100%;"
+            />
+          </el-form-item>
           <el-form-item label="主办方">
             <el-input v-model="editForm.organizer" placeholder="请输入主办方" />
           </el-form-item>
           <el-form-item label="类别">
             <el-input v-model="editForm.category" placeholder="例如：学术讲座、文艺活动" />
           </el-form-item>
-          <el-form-item label="地点">
+          <el-form-item label="地点描述">
             <el-input v-model="editForm.locationDesc" placeholder="请输入活动地点" />
           </el-form-item>
           <el-form-item label="所属校区">
@@ -490,6 +616,52 @@
                 :value="campus.campusId"
               />
             </el-select>
+          </el-form-item>
+          <el-form-item label="所属建筑">
+            <el-select v-model="editForm.buildingId" placeholder="请选择建筑" style="width: 100%;" clearable>
+              <el-option
+                v-for="building in buildingsList"
+                :key="building.buildingId"
+                :label="building.name"
+                :value="building.buildingId"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="editForm.description" type="textarea" :rows="3" placeholder="请输入活动描述" />
+          </el-form-item>
+        </template>
+
+        <!-- 课程-教师关联编辑表单 -->
+        <template v-else-if="editType === 'courseTeacher'">
+          <el-form-item label="课程" required>
+            <el-select v-model="editForm.courseId" placeholder="请选择课程" style="width: 100%;" clearable>
+              <el-option
+                v-for="course in courses"
+                :key="course.courseId"
+                :label="course.name"
+                :value="course.courseId"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="教师" required>
+            <el-select v-model="editForm.teacherId" placeholder="请选择教师" style="width: 100%;" clearable>
+              <el-option
+                v-for="teacher in teachers"
+                :key="teacher.teacherId"
+                :label="teacher.name"
+                :value="teacher.teacherId"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="学期" required>
+            <el-input v-model="editForm.semester" placeholder="例如：2024-2025-1" />
+          </el-form-item>
+          <el-form-item label="角色">
+            <el-input v-model="editForm.role" placeholder="例如：主讲、助教" />
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input v-model="editForm.remarks" type="textarea" :rows="3" placeholder="请输入备注" />
           </el-form-item>
         </template>
       </el-form>
@@ -523,6 +695,24 @@
           <el-form-item label="楼层数">
             <el-input-number v-model="addForm.floors" :min="1" :max="100" style="width: 100%;" />
           </el-form-item>
+          <el-form-item label="开放时间">
+            <el-time-picker
+              v-model="addForm.openTime"
+              format="HH:mm"
+              value-format="HH:mm:ss"
+              placeholder="选择时间"
+              style="width: 100%;"
+            />
+          </el-form-item>
+          <el-form-item label="关闭时间">
+            <el-time-picker
+              v-model="addForm.closeTime"
+              format="HH:mm"
+              value-format="HH:mm:ss"
+              placeholder="选择时间"
+              style="width: 100%;"
+            />
+          </el-form-item>
           <el-form-item label="描述">
             <el-input v-model="addForm.description" type="textarea" :rows="3" placeholder="请输入描述" />
           </el-form-item>
@@ -546,6 +736,9 @@
               />
             </el-select>
           </el-form-item>
+          <el-form-item label="开放时间">
+            <el-input v-model="addForm.openTime" placeholder="例如：08:00-22:00" />
+          </el-form-item>
           <el-form-item label="容量">
             <el-input-number v-model="addForm.capacity" :min="1" style="width: 100%;" />
           </el-form-item>
@@ -554,6 +747,9 @@
           </el-form-item>
           <el-form-item label="位置描述">
             <el-input v-model="addForm.locationDesc" placeholder="例如：一楼、二楼" />
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="addForm.description" type="textarea" :rows="3" placeholder="请输入设施描述" />
           </el-form-item>
         </template>
 
@@ -630,7 +826,7 @@
           <el-form-item label="类别">
             <el-input v-model="addForm.category" placeholder="例如：学术讲座、文艺活动" />
           </el-form-item>
-          <el-form-item label="地点">
+          <el-form-item label="地点描述">
             <el-input v-model="addForm.locationDesc" placeholder="请输入活动地点" />
           </el-form-item>
           <el-form-item label="所属校区">
@@ -642,6 +838,52 @@
                 :value="campus.campusId"
               />
             </el-select>
+          </el-form-item>
+          <el-form-item label="所属建筑">
+            <el-select v-model="addForm.buildingId" placeholder="请选择建筑" style="width: 100%;" clearable>
+              <el-option
+                v-for="building in buildingsList"
+                :key="building.buildingId"
+                :label="building.name"
+                :value="building.buildingId"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="addForm.description" type="textarea" :rows="3" placeholder="请输入活动描述" />
+          </el-form-item>
+        </template>
+
+        <!-- 课程-教师关联添加表单 -->
+        <template v-else-if="addType === 'courseTeacher'">
+          <el-form-item label="课程" required>
+            <el-select v-model="addForm.courseId" placeholder="请选择课程" style="width: 100%;" clearable>
+              <el-option
+                v-for="course in courses"
+                :key="course.courseId"
+                :label="course.name"
+                :value="course.courseId"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="教师" required>
+            <el-select v-model="addForm.teacherId" placeholder="请选择教师" style="width: 100%;" clearable>
+              <el-option
+                v-for="teacher in teachers"
+                :key="teacher.teacherId"
+                :label="teacher.name"
+                :value="teacher.teacherId"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="学期" required>
+            <el-input v-model="addForm.semester" placeholder="例如：2024-2025-1" />
+          </el-form-item>
+          <el-form-item label="角色">
+            <el-input v-model="addForm.role" placeholder="例如：主讲、助教" />
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input v-model="addForm.remarks" type="textarea" :rows="3" placeholder="请输入备注" />
           </el-form-item>
         </template>
       </el-form>
@@ -656,7 +898,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue'
 import { Plus, Delete, Edit, Upload, Refresh } from '@element-plus/icons-vue'
-import { buildingAPI, facilityAPI, courseAPI, teacherAPI, eventAPI, campusAPI, departmentAPI } from '../api'
+import { buildingAPI, facilityAPI, courseAPI, teacherAPI, eventAPI, campusAPI, departmentAPI, courseTeacherAPI } from '../api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 export default {
@@ -675,6 +917,7 @@ export default {
     const courses = ref([])
     const teachers = ref([])
     const events = ref([])
+    const courseTeachers = ref([])
     const loading = ref(false)
     
     // 权限检查
@@ -745,6 +988,19 @@ export default {
       }
     }
 
+    // 加载课程-教师关联数据
+    const loadCourseTeachers = async () => {
+      loading.value = true
+      try {
+        courseTeachers.value = await courseTeacherAPI.getAllCourseTeachers()
+      } catch (error) {
+        console.error('加载课程-教师关联数据失败:', error)
+        ElMessage.error('加载数据失败，请稍后重试')
+      } finally {
+        loading.value = false
+      }
+    }
+
     const handleDelete = async (type, id) => {
       try {
         await ElMessageBox.confirm('确定要删除吗？此操作不可恢复！', '警告', {
@@ -778,9 +1034,73 @@ export default {
       } catch (error) {
         if (error !== 'cancel') {
           console.error('删除失败:', error)
-          ElMessage.error('删除失败，请稍后重试')
+          const errorMsg = error.response?.data?.message || error.message || '删除失败，请稍后重试'
+          ElMessage.error(errorMsg)
         }
       }
+    }
+
+    const handleDeleteCourseTeacher = async (row) => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要删除课程 "${row.course?.name || row.courseId}" 和教师 "${row.teacher?.name || row.teacherId}" 的关联吗？`,
+          '警告',
+          {
+            confirmButtonText: '确定删除',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+        
+        await courseTeacherAPI.deleteCourseTeacher(
+          row.courseId,
+          row.teacherId,
+          row.semester
+        )
+        
+        ElMessage.success('删除成功')
+        loadCourseTeachers()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('删除失败:', error)
+          const errorMsg = error.response?.data?.message || error.message || '删除失败，请稍后重试'
+          ElMessage.error(errorMsg)
+        }
+      }
+    }
+
+    // CSV导入处理函数
+    const beforeCSVUpload = (file) => {
+      const isCSV = file.type === 'text/csv' || file.name.endsWith('.csv')
+      if (!isCSV) {
+        ElMessage.error('只能上传 CSV 文件!')
+        return false
+      }
+      return true
+    }
+
+    const handleCSVImportSuccess = (response) => {
+      console.log('课程-教师关联导入成功:', response)
+      if (response.success) {
+        ElMessage.success(`成功导入 ${response.count || 0} 条记录`)
+        ElMessage.success(`数据已刷新`)
+        loadCourseTeachers()
+      } else {
+        ElMessage.error(response.message || '导入失败')
+      }
+    }
+
+    const handleCSVImportError = (error) => {
+      console.error('课程-教师关联导入失败:', error)
+      let errorMsg = 'CSV导入失败'
+      
+      if (error.response?.data?.message) {
+        errorMsg = error.response.data.message
+      } else if (error.message) {
+        errorMsg = error.message
+      }
+      
+      ElMessage.error(errorMsg)
     }
 
     const handleEdit = (type, row) => {
@@ -826,6 +1146,8 @@ export default {
               type: editForm.value.type,
               campus: editForm.value.campusId ? { campusId: editForm.value.campusId } : null,
               floors: editForm.value.floors,
+              openTime: editForm.value.openTime,
+              closeTime: editForm.value.closeTime,
               description: editForm.value.description
             }
             break
@@ -835,9 +1157,11 @@ export default {
               name: editForm.value.name,
               type: editForm.value.type,
               building: editForm.value.buildingId ? { buildingId: editForm.value.buildingId } : null,
+              openTime: editForm.value.openTime,
+              locationDesc: editForm.value.locationDesc,
               capacity: editForm.value.capacity,
               contact: editForm.value.contact,
-              locationDesc: editForm.value.locationDesc
+              description: editForm.value.description
             }
             break
           case 'course':
@@ -864,10 +1188,23 @@ export default {
             updatedData = {
               eventId: editRowId.value,
               name: editForm.value.name,
+              eventTime: editForm.value.eventTime,
+              locationDesc: editForm.value.locationDesc,
+              campus: editForm.value.campusId ? { campusId: editForm.value.campusId } : null,
+              building: editForm.value.buildingId ? { buildingId: editForm.value.buildingId } : null,
               organizer: editForm.value.organizer,
               category: editForm.value.category,
-              locationDesc: editForm.value.locationDesc,
-              campus: editForm.value.campusId ? { campusId: editForm.value.campusId } : null
+              description: editForm.value.description
+            }
+            break
+          case 'courseTeacher':
+            // 构建新的复合主键和更新数据
+            updatedData = {
+              courseId: editForm.value.courseId,
+              teacherId: editForm.value.teacherId,
+              semester: editForm.value.semester,
+              role: editForm.value.role || '',
+              remarks: editForm.value.remarks || ''
             }
             break
         }
@@ -889,6 +1226,15 @@ export default {
           case 'event':
             await eventAPI.updateEvent(editRowId.value, updatedData)
             break
+          case 'courseTeacher':
+            // 使用旧的主键（editRowId）来更新，新的数据在updatedData中
+            await courseTeacherAPI.updateCourseTeacher(
+              editRowId.value.courseId,
+              editRowId.value.teacherId,
+              editRowId.value.semester,
+              updatedData
+            )
+            break
         }
         
         ElMessage.success('修改成功')
@@ -896,7 +1242,8 @@ export default {
         loadData()
       } catch (error) {
         console.error('修改失败:', error)
-        ElMessage.error('修改失败，请稍后重试')
+        const errorMsg = error.response?.data?.message || error.message || '修改失败，请稍后重试'
+        ElMessage.error(errorMsg)
       }
     }
 
@@ -927,22 +1274,26 @@ export default {
               type: addForm.value.type || '',
               campus: addForm.value.campusId ? { campusId: addForm.value.campusId } : null,
               floors: addForm.value.floors || null,
+              openTime: addForm.value.openTime || null,
+              closeTime: addForm.value.closeTime || null,
               description: addForm.value.description || ''
             }
             await buildingAPI.createBuilding(newData)
             break
           case 'facility':
             if (!addForm.value.buildingId) {
-              ElMessage.warning('建筑ID不能为空')
+              ElMessage.warning('所属建筑不能为空')
               return
             }
             newData = {
               name: addForm.value.name,
               type: addForm.value.type,
               building: { buildingId: addForm.value.buildingId },
+              openTime: addForm.value.openTime || '',
+              locationDesc: addForm.value.locationDesc || '',
               capacity: addForm.value.capacity || null,
               contact: addForm.value.contact || '',
-              locationDesc: addForm.value.locationDesc || ''
+              description: addForm.value.description || ''
             }
             await facilityAPI.createFacility(newData)
             break
@@ -974,12 +1325,29 @@ export default {
             newData = {
               name: addForm.value.name,
               eventTime: addForm.value.eventTime,
+              locationDesc: addForm.value.locationDesc || '',
+              campus: addForm.value.campusId ? { campusId: addForm.value.campusId } : null,
+              building: addForm.value.buildingId ? { buildingId: addForm.value.buildingId } : null,
               organizer: addForm.value.organizer || '',
               category: addForm.value.category || '',
-              locationDesc: addForm.value.locationDesc || '',
-              campus: addForm.value.campusId ? { campusId: addForm.value.campusId } : null
+              description: addForm.value.description || ''
             }
             await eventAPI.createEvent(newData)
+            break
+          case 'courseTeacher':
+            // 验证必填字段
+            if (!addForm.value.courseId || !addForm.value.teacherId || !addForm.value.semester) {
+              ElMessage.warning('课程、教师和学期均为必填项')
+              return
+            }
+            newData = {
+              courseId: addForm.value.courseId,
+              teacherId: addForm.value.teacherId,
+              semester: addForm.value.semester,
+              role: addForm.value.role || '',
+              remarks: addForm.value.remarks || ''
+            }
+            await courseTeacherAPI.createCourseTeacher(newData)
             break
         }
         
@@ -988,7 +1356,9 @@ export default {
         loadData()
       } catch (error) {
         console.error('添加失败:', error)
-        ElMessage.error('添加失败，请检查数据格式')
+        // 提取后端返回的错误信息
+        const errorMsg = error.response?.data?.message || error.message || '添加失败，请检查数据格式'
+        ElMessage.error(errorMsg)
       }
     }
 
@@ -1004,7 +1374,16 @@ export default {
 
     const handleImportError = (error) => {
       console.error('导入失败:', error)
-      ElMessage.error('文件上传失败，请检查文件格式')
+      // 尝试从错误响应中提取详细信息
+      let errorMsg = '文件上传失败'
+      
+      if (error.response?.data?.message) {
+        errorMsg = error.response.data.message
+      } else if (error.message) {
+        errorMsg = error.message
+      }
+      
+      ElMessage.error(errorMsg)
     }
 
     const getEntityName = (type) => {
@@ -1013,7 +1392,8 @@ export default {
         facility: '设施',
         course: '课程',
         teacher: '教师',
-        event: '活动'
+        event: '活动',
+        courseTeacher: '课程-教师关联'
       }
       return names[type] || type
     }
@@ -1025,6 +1405,12 @@ export default {
         case 'course': return row.courseId
         case 'teacher': return row.teacherId
         case 'event': return row.eventId
+        case 'courseTeacher': 
+          return {
+            courseId: row.courseId,
+            teacherId: row.teacherId,
+            semester: row.semester
+          }
         default: return null
       }
     }
@@ -1052,6 +1438,7 @@ export default {
       if (isAdmin.value) {
         loadRelatedData() // 先加载关联数据（校区、建筑、院系）
         loadData() // 再加载主数据
+        loadCourseTeachers() // 加载课程-教师关联数据
       }
     })
 
@@ -1062,6 +1449,7 @@ export default {
       courses,
       teachers,
       events,
+      courseTeachers,
       loading,
       isAdmin,
       goToUserCenter,
@@ -1075,15 +1463,20 @@ export default {
       buildingsList,
       departments,
       handleDelete,
+      handleDeleteCourseTeacher,
       handleEdit,
       confirmEdit,
       showAddDialog,
       confirmAdd,
       handleImportSuccess,
       handleImportError,
+      beforeCSVUpload,
+      handleCSVImportSuccess,
+      handleCSVImportError,
       getEntityName,
       formatDateTime,
-      loadData
+      loadData,
+      loadCourseTeachers
     }
   }
 }

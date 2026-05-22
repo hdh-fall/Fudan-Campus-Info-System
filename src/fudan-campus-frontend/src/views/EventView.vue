@@ -108,9 +108,9 @@ export default {
           console.log('近期活动（未来15天）:', data)
           events.value = data
         } else {
-          // 这里简化处理，实际应该有个getAll接口
-          const data = await eventAPI.getUpcomingEvents(365)
-          console.log('全部活动:', data)
+          // 获取所有活动，包括已过期的
+          const data = await eventAPI.getAllEvents()
+          console.log('全部活动（包括已过期）:', data)
           events.value = data
         }
         
@@ -167,6 +167,25 @@ export default {
 
     onMounted(() => {
       loadEvents()
+      
+      // 检查是否有从快速搜索传来的详情数据
+      const detailData = localStorage.getItem('viewDetailData')
+      if (detailData) {
+        try {
+          const parsed = JSON.parse(detailData)
+          if (parsed.category === '活动') {
+            // 延迟执行，等待数据加载完成
+            setTimeout(() => {
+              viewDetail(parsed.data)
+              ElMessage.success(`正在查看活动详情：${parsed.data.name}`)
+            }, 500)
+          }
+          // 清除已处理的详情数据
+          localStorage.removeItem('viewDetailData')
+        } catch (e) {
+          console.error('解析详情数据失败:', e)
+        }
+      }
     })
 
     return {

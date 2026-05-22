@@ -94,6 +94,17 @@
       </el-col>
     </el-row>
 
+    <!-- 管理员入口 -->
+    <el-row v-if="isAdmin" :gutter="20" style="margin-top: 20px;">
+      <el-col :span="24">
+        <el-card class="feature-card admin-card" @click="handleNavigate('admin')">
+          <el-icon size="50"><Setting /></el-icon>
+          <h3>管理后台</h3>
+          <p>管理系统数据和用户信息</p>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <el-card style="margin-top: 20px;">
       <template #header>
         <div class="card-header">
@@ -210,8 +221,8 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
-import { OfficeBuilding, MapLocation, CoffeeCup, Reading, Calendar, User, Search, ChatDotRound, Promotion } from '@element-plus/icons-vue'
+import { ref, onMounted, computed } from 'vue'
+import { OfficeBuilding, MapLocation, CoffeeCup, Reading, Calendar, User, Search, ChatDotRound, Promotion, Setting } from '@element-plus/icons-vue'
 import { campusAPI, buildingAPI, facilityAPI, eventAPI, courseAPI, teacherAPI } from '../api'
 import { ElMessage } from 'element-plus'
 
@@ -226,7 +237,8 @@ export default {
     User,
     Search,
     ChatDotRound,
-    Promotion
+    Promotion,
+    Setting
   },
   emits: ['navigate'],
   setup(props, { emit }) {
@@ -237,6 +249,20 @@ export default {
     const nlQuestion = ref('')
     const nlLoading = ref(false)
     const nlResult = ref(null)
+    
+    // 检查是否为管理员
+    const isAdmin = computed(() => {
+      const currentUserStr = localStorage.getItem('currentUser')
+      if (currentUserStr) {
+        try {
+          const currentUser = JSON.parse(currentUserStr)
+          return currentUser && currentUser.role === 'admin'
+        } catch (e) {
+          console.error('解析用户信息失败:', e)
+        }
+      }
+      return false
+    })
     
     const stats = ref({
       campusCount: 0,
@@ -431,7 +457,10 @@ export default {
         close_time: '关闭时间',
         contact: '联系方式',
         location_desc: '位置描述',
-        semester_offered: '开设学期'
+        semester_offered: '开设学期',
+        teachers: '授课教师',
+        role: '角色',
+        course: '课程'
       }
       return labelMap[key] || key
     }
@@ -460,7 +489,23 @@ export default {
       
       // 特殊处理某些字段
       if (key === 'role') {
-        return value === 'admin' ? '管理员' : '普通用户'
+        return value === 'admin' ? '管理员' : (value || '主讲')
+      }
+      
+      // 处理时间格式（ISO 8601 -> 友好格式）
+      if (key === 'time' || key === 'eventTime') {
+        try {
+          const date = new Date(value)
+          return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        } catch (e) {
+          return value
+        }
       }
       
       if (key === 'type') {
@@ -508,8 +553,26 @@ export default {
 
     const viewDetail = (item) => {
       // 根据类别导航到对应页面并查看详情
-      ElMessage.info(`查看${item.category}详情：${item.name}`)
-      // TODO: 可以实现跳转到详情页的功能
+      const pageMap = {
+        '建筑': 'campus',
+        '设施': 'facility',
+        '课程': 'course',
+        '教师': 'course',
+        '活动': 'event'
+      }
+      
+      const targetPage = pageMap[item.category]
+      if (targetPage) {
+        // 设置一个全局变量来传递详情信息
+        localStorage.setItem('viewDetailData', JSON.stringify({
+          category: item.category,
+          data: item.data
+        }))
+        emit('navigate', targetPage)
+        ElMessage.success(`正在查看${item.category}详情`)
+      } else {
+        ElMessage.warning('暂不支持该类型的详情查看')
+      }
     }
 
     onMounted(() => {
@@ -522,6 +585,7 @@ export default {
       nlQuestion,
       nlLoading,
       nlResult,
+      isAdmin,
       stats,
       handleNavigate,
       handleSearch,
@@ -601,6 +665,15 @@ export default {
 .feature-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.admin-card {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.47) 0%, rgba(236, 229, 229, 0) 100%);
+  color: rgb(245, 245, 245);
+}
+
+.admin-card h3 {
+  color: white !important;
 }
 
 .feature-card h3 {

@@ -2,7 +2,7 @@
 
 ## 概述
 
-系统支持通过CSV文件批量导入数据，包括建筑、设施、课程、教师和活动等信息。
+系统支持通过CSV文件批量导入数据，包括建筑、设施、课程、教师、课程-教师关联和活动等信息。
 
 ## 使用方法
 
@@ -119,7 +119,34 @@ name,department_id,title,email,phone
 王五,3,讲师,wangwu@fudan.edu.cn,021-65640012
 ```
 
-### 5. 活动（events）
+### 5. 课程-教师关联（course_teachers）
+
+**文件名示例**: `course_teachers_example.csv`
+
+**列定义**:
+| 列名 | 说明 | 是否必填 | 示例 |
+|------|------|----------|------|
+| course_id | 课程ID | 是 | 1 |
+| teacher_id | 教师ID | 是 | 1 |
+| semester | 学期 | 是 | 2024-2025-1 |
+| role | 角色 | 否 | 主讲 |
+| remarks | 备注 | 否 | 计算机科学导论课程 |
+
+**示例内容**:
+```csv
+course_id,teacher_id,semester,role,remarks
+1,1,2024-2025-1,主讲,计算机科学导论课程
+1,2,2024-2025-1,助教,协助实验教学
+2,3,2024-2025-1,主讲,高等数学A课程
+```
+
+**注意事项**:
+- **复合主键**: (course_id, teacher_id, semester) 三者组合必须唯一
+- **重复检测**: 同一教师在同一学期不能重复关联同一课程
+- **外键依赖**: course_id 和 teacher_id 必须在数据库中已存在
+- **角色类型**: 常见角色包括"主讲"、"助教"等，可自定义
+
+### 6. 活动（events）
 
 **文件名示例**: `events_example.csv`
 
@@ -174,8 +201,8 @@ name,event_time,location_desc,campus_id,organizer,category,description
 
 ### 5. 重复数据
 
-- 系统不会自动检查重复数据
-- 导入前请确认数据不重复，或先清空相关数据
+- **课程-教师关联**: 系统会自动检测重复的(course_id, teacher_id, semester)组合，跳过已存在的记录
+- **其他数据**: 系统不会自动检查重复数据，导入前请确认数据不重复，或先清空相关数据
 
 ## 常见问题
 
@@ -198,7 +225,16 @@ name,event_time,location_desc,campus_id,organizer,category,description
 3. 在编码选项中选择"UTF-8"
 4. 保存后重新导入
 
-### Q3: 如何查看已导入的数据
+### Q3: 导入课程-教师关联时提示"该教师在此学期已关联此课程"
+
+**原因**: CSV中存在重复的(course_id, teacher_id, semester)组合
+
+**解决方法**:
+1. 检查CSV文件中是否有相同的三元组组合
+2. 删除重复的行
+3. 或者修改semester字段为不同的学期
+
+### Q4: 如何查看已导入的数据
 
 **方法**:
 1. 在管理后台对应标签页查看
@@ -208,10 +244,11 @@ name,event_time,location_desc,campus_id,organizer,category,description
    SELECT * FROM facility;
    SELECT * FROM course;
    SELECT * FROM teacher;
+   SELECT * FROM course_teacher;
    SELECT * FROM event;
    ```
 
-### Q4: 导入大量数据时超时
+### Q5: 导入大量数据时超时
 
 **原因**: 数据量过大导致超时
 
@@ -225,10 +262,12 @@ name,event_time,location_desc,campus_id,organizer,category,description
 系统提供了完整的CSV示例文件，位于：
 ```
 database/csv_templates/
+├── README.md
 ├── buildings_example.csv
 ├── facilities_example.csv
 ├── courses_example.csv
 ├── teachers_example.csv
+├── course_teachers_example.csv
 └── events_example.csv
 ```
 

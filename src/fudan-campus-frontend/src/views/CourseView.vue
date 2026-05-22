@@ -51,7 +51,7 @@
                 >
                   <template #content>
                     <div>院系: {{ teacherInfo.department?.name || '-' }}</div>
-                    <div>学期: {{ teacherInfo.semesters?.join(', ') || '-' }}</div>
+                    <div>角色: {{ teacherInfo.role || '主讲' }}</div>
                   </template>
                   <el-tag 
                     size="small"
@@ -169,10 +169,20 @@
         <h4>📚 授课课程</h4>
         <el-empty v-if="teacherCourses.length === 0" description="该教师暂无授课信息" :image-size="80" />
         <el-table v-else :data="teacherCourses" style="width: 100%" stripe>
-          <el-table-column prop="name" label="课程名称" min-width="180" />
-          <el-table-column prop="department.name" label="开课院系" min-width="150">
+          <el-table-column prop="courseName" label="课程名称" min-width="180" />
+          <el-table-column label="开课院系" min-width="150">
             <template #default="scope">
               {{ scope.row.department?.name || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="semester" label="开课学期" width="120">
+            <template #default="scope">
+              <el-tag size="small" type="warning">{{ scope.row.semester }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="role" label="担任角色" width="100">
+            <template #default="scope">
+              <el-tag size="small" type="success">{{ scope.row.role || '主讲' }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="credits" label="学分" width="80" align="center">
@@ -307,7 +317,18 @@ export default {
       teacherDialogVisible.value = true
       
       try {
-        teacherCourses.value = await teacherAPI.getCoursesByTeacher(teacher.teacherId)
+        // 获取课程-教师关联数据（包含学期信息）
+        const courseRelations = await teacherAPI.getCourseRelationsByTeacher(teacher.teacherId)
+        
+        // 将CourseTeacher对象转换为包含课程和学期信息的格式
+        teacherCourses.value = courseRelations.map(relation => ({
+          courseId: relation.courseId,
+          courseName: relation.course?.name || '未知课程',
+          department: relation.course?.department,
+          credits: relation.course?.credits,
+          semester: relation.semester,
+          role: relation.role
+        }))
       } catch (error) {
         ElMessage.error('加载授课信息失败')
       }
@@ -316,6 +337,30 @@ export default {
     onMounted(() => {
       loadCourses()
       loadTeachers()
+      
+      // 检查是否有从快速搜索传来的详情数据
+      const detailData = localStorage.getItem('viewDetailData')
+      if (detailData) {
+        try {
+          const parsed = JSON.parse(detailData)
+          if (parsed.category === '课程' || parsed.category === '教师') {
+            // 延迟执行，等待数据加载完成
+            setTimeout(() => {
+              if (parsed.category === '课程') {
+                viewCourseDetail(parsed.data)
+                ElMessage.success(`正在查看课程详情：${parsed.data.name}`)
+              } else {
+                viewTeacherCourses(parsed.data)
+                ElMessage.success(`正在查看教师详情：${parsed.data.name}`)
+              }
+            }, 500)
+          }
+          // 清除已处理的详情数据
+          localStorage.removeItem('viewDetailData')
+        } catch (e) {
+          console.error('解析详情数据失败:', e)
+        }
+      }
     })
 
     return {

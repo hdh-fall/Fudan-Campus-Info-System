@@ -74,7 +74,7 @@ export const teacherAPI = {
   getTeachersByDepartment: (departmentId) => api.get(`/teachers/department/${departmentId}`),
   searchTeachers: (keyword) => api.get('/teachers/search', { params: { keyword } }),
   getTeacherById: (id) => api.get(`/teachers/${id}`),
-  getCoursesByTeacher: (teacherId) => api.get(`/teachers/${teacherId}/courses`),
+  getCourseRelationsByTeacher: (teacherId) => api.get(`/teachers/${teacherId}/course-relations`),
   createTeacher: (teacher) => api.post('/teachers', teacher),
   updateTeacher: (id, teacher) => api.put(`/teachers/${id}`, teacher),
   deleteTeacher: (id) => api.delete(`/teachers/${id}`)
@@ -82,6 +82,7 @@ export const teacherAPI = {
 
 // 活动相关API
 export const eventAPI = {
+  getAllEvents: () => api.get('/events'),
   getUpcomingEvents: (days = 7) => api.get('/events/upcoming', { params: { days } }),
   getEventsByCampus: (campusId) => api.get(`/events/campus/${campusId}`),
   searchEvents: (keyword) => api.get('/events/search', { params: { keyword } }),
@@ -110,6 +111,29 @@ export const queryRecordAPI = {
 // 院系相关API
 export const departmentAPI = {
   getAllDepartments: () => api.get('/departments')
+}
+
+// 课程-教师关联相关API
+export const courseTeacherAPI = {
+  // 获取所有课程-教师关联记录
+  getAllCourseTeachers: () => api.get('/course-teachers'),
+  
+  // 根据课程ID获取授课教师列表
+  getTeachersByCourse: (courseId) => api.get(`/courses/${courseId}/teachers`),
+  
+  // 根据教师ID获取授课课程关联列表（包含学期、角色等信息）
+  getCourseRelationsByTeacher: (teacherId) => api.get(`/teachers/${teacherId}/course-relations`),
+  
+  // 创建课程-教师关联
+  createCourseTeacher: (courseTeacher) => api.post('/course-teachers', courseTeacher),
+  
+  // 更新课程-教师关联
+  updateCourseTeacher: (courseId, teacherId, semester, courseTeacher) => 
+    api.put(`/course-teachers/${courseId}/${teacherId}/${semester}`, courseTeacher),
+  
+  // 删除课程-教师关联
+  deleteCourseTeacher: (courseId, teacherId, semester) => 
+    api.delete(`/course-teachers/${courseId}/${teacherId}/${semester}`)
 }
 
 export default api

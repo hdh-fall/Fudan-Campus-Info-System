@@ -11,6 +11,7 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<Event, Integer> {
     List<Event> findByEventTimeBetween(LocalDateTime start, LocalDateTime end);
     List<Event> findByCampus_CampusId(Integer campusId);
+    List<Event> findByNameContaining(String keyword);
     List<Event> findByNameContainingOrOrganizerContaining(String nameKeyword, String organizerKeyword);
     
     @Query("SELECT e.category, COUNT(e) FROM Event e GROUP BY e.category")

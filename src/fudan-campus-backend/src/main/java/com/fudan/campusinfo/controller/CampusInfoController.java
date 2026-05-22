@@ -205,6 +205,15 @@ public class CampusInfoController {
     }
 
     // ==================== 活动接口 ====================
+    
+    /**
+     * 获取所有活动（包括已过期的）
+     */
+    @GetMapping("/events")
+    public ResponseEntity<List<Event>> getAllEvents() {
+        return ResponseEntity.ok(campusInfoService.getAllEvents());
+    }
+    
     @GetMapping("/events/upcoming")
     public ResponseEntity<List<Event>> getUpcomingEvents(@RequestParam(defaultValue = "7") int days) {
         return ResponseEntity.ok(campusInfoService.getUpcomingEvents(days));
@@ -291,6 +300,82 @@ public class CampusInfoController {
     @GetMapping("/departments")
     public ResponseEntity<List<Department>> getAllDepartments() {
         return ResponseEntity.ok(campusInfoService.getAllDepartments());
+    }
+
+    // ==================== 课程-教师关联接口 ====================
+    
+    /**
+     * 获取所有课程-教师关联记录
+     */
+    @GetMapping("/course-teachers")
+    public ResponseEntity<List<CourseTeacher>> getAllCourseTeachers() {
+        return ResponseEntity.ok(campusInfoService.getAllCourseTeachers());
+    }
+    
+    /**
+     * 根据课程ID获取授课教师列表
+     */
+    @GetMapping("/courses/{courseId}/teachers")
+    public ResponseEntity<List<CourseTeacher>> getTeachersByCourse(@PathVariable Integer courseId) {
+        return ResponseEntity.ok(campusInfoService.getTeachersByCourseId(courseId));
+    }
+    
+    /**
+     * 根据教师ID获取授课课程关联列表（包含学期、角色等信息）
+     */
+    @GetMapping("/teachers/{teacherId}/course-relations")
+    public ResponseEntity<List<CourseTeacher>> getCourseRelationsByTeacher(@PathVariable Integer teacherId) {
+        return ResponseEntity.ok(campusInfoService.getCourseRelationsByTeacherId(teacherId));
+    }
+    
+    /**
+     * 创建课程-教师关联
+     */
+    @PostMapping("/course-teachers")
+    public ResponseEntity<CourseTeacher> createCourseTeacher(@RequestBody CourseTeacher courseTeacher) {
+        try {
+            CourseTeacher result = campusInfoService.createCourseTeacher(courseTeacher);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    /**
+     * 更新课程-教师关联
+     * URL格式: /course-teachers/{courseId}/{teacherId}/{semester}
+     */
+    @PutMapping("/course-teachers/{courseId}/{teacherId}/{semester}")
+    public ResponseEntity<CourseTeacher> updateCourseTeacher(
+            @PathVariable Integer courseId,
+            @PathVariable Integer teacherId,
+            @PathVariable String semester,
+            @RequestBody CourseTeacher courseTeacher) {
+        try {
+            CourseTeacherId id = new CourseTeacherId(courseId, teacherId, semester);
+            CourseTeacher result = campusInfoService.updateCourseTeacher(id, courseTeacher);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    /**
+     * 删除课程-教师关联
+     * URL格式: /course-teachers/{courseId}/{teacherId}/{semester}
+     */
+    @DeleteMapping("/course-teachers/{courseId}/{teacherId}/{semester}")
+    public ResponseEntity<Void> deleteCourseTeacher(
+            @PathVariable Integer courseId,
+            @PathVariable Integer teacherId,
+            @PathVariable String semester) {
+        try {
+            CourseTeacherId id = new CourseTeacherId(courseId, teacherId, semester);
+            campusInfoService.deleteCourseTeacher(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // ==================== 自然语言查询接口 ====================
@@ -480,6 +565,25 @@ public class CampusInfoController {
             int count = csvImportService.importEvents(file);
             result.put("success", true);
             result.put("message", "成功导入 " + count + " 条活动数据");
+            result.put("count", count);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "导入失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(result);
+        }
+    }
+
+    /**
+     * 从CSV文件批量导入课程-教师关联数据
+     */
+    @PostMapping("/import/course-teachers")
+    public ResponseEntity<Map<String, Object>> importCourseTeachers(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            int count = csvImportService.importCourseTeachers(file);
+            result.put("success", true);
+            result.put("message", "成功导入 " + count + " 条课程-教师关联数据");
             result.put("count", count);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
