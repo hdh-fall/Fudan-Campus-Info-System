@@ -432,6 +432,7 @@ export default {
     // 格式化表格列标签
     const formatLabel = (key) => {
       const labelMap = {
+        // ===== 基础字段 =====
         name: '名称',
         type: '类型',
         location: '位置',
@@ -460,7 +461,64 @@ export default {
         semester_offered: '开设学期',
         teachers: '授课教师',
         role: '角色',
-        course: '课程'
+        course: '课程',
+        
+        // ===== AI SQL返回的字段（带别名）===== 
+        building_name: '建筑名称',
+        campus_name: '校区名称',
+        teacher_name: '教师姓名',
+        event_name: '活动名称',
+        department_name: '院系名称',
+        course_name: '课程名称',
+        
+        // ===== campus表字段 =====
+        campus_id: '校区ID',
+        contact_phone: '联系电话',
+        latitude: '纬度',
+        longitude: '经度',
+        
+        // ===== building表字段 =====
+        building_id: '建筑ID',
+        
+        // ===== facility表字段 =====
+        facility_id: '设施ID',
+        
+        // ===== department表字段 =====
+        department_id: '院系ID',
+        
+        // ===== teacher表字段 =====
+        teacher_id: '教师ID',
+        
+        // ===== course表字段 =====
+        course_id: '课程ID',
+        
+        // ===== event表字段 =====
+        event_id: '活动ID',
+        event_time: '活动时间',
+        
+        // ===== user表字段 =====
+        user_id: '用户ID',
+        username: '用户名',
+        grade: '年级',
+        created_at: '创建时间',
+        
+        // ===== course_teacher表字段 =====
+        remarks: '备注',
+        
+        // ===== query_record表字段 =====
+        record_id: '记录ID',
+        question: '问题',
+        query_time: '查询时间',
+        result_summary: '结果摘要',
+        used_nl2sql: '使用AI',
+        client_ip: '客户端IP',
+        
+        // ===== 通用字段（column_1, column_2等）=====
+        column_1: '字段1',
+        column_2: '字段2',
+        column_3: '字段3',
+        column_4: '字段4',
+        column_5: '字段5'
       }
       return labelMap[key] || key
     }
@@ -492,8 +550,13 @@ export default {
         return value === 'admin' ? '管理员' : (value || '主讲')
       }
       
+      // 处理布尔值
+      if (key === 'used_nl2sql') {
+        return value ? '是' : '否'
+      }
+      
       // 处理时间格式（ISO 8601 -> 友好格式）
-      if (key === 'time' || key === 'eventTime') {
+      if (key === 'time' || key === 'eventTime' || key === 'event_time' || key === 'query_time' || key === 'created_at') {
         try {
           const date = new Date(value)
           return date.toLocaleString('zh-CN', {

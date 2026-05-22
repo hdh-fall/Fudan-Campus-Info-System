@@ -2,6 +2,8 @@ package com.fudan.campusinfo.service;
 
 import com.fudan.campusinfo.entity.*;
 import com.fudan.campusinfo.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,9 @@ public class CampusInfoService {
 
     @Autowired
     private CourseTeacherRepository courseTeacherRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     private EventRepository eventRepository;
@@ -459,5 +464,106 @@ public class CampusInfoService {
             throw new RuntimeException("课程-教师关联不存在");
         }
         courseTeacherRepository.deleteById(id);
+    }
+    
+    /**
+     * 执行原生SQL查询（用于AI生成的SQL）
+     * @param sql SQL语句
+     * @return 查询结果列表，包含真实的列名
+     */
+    public List<Map<String, Object>> executeNativeSQL(String sql) {
+        try {
+            // 使用createNativeQuery并指定返回类型
+            jakarta.persistence.Query query = entityManager.createNativeQuery(sql);
+            
+            // 获取元数据信息
+            List<Object[]> results = query.getResultList();
+            
+            // 将Object[]转换为Map，使用SQL中的列别名
+            List<Map<String, Object>> mappedResults = new ArrayList<>();
+            
+            if (results.isEmpty()) {
+                return mappedResults;
+            }
+            
+            // 尝试从Query中获取列名（通过解析SQL或使用元数据）
+            String[] columnNames = extractColumnNames(sql);
+            
+            for (Object[] row : results) {
+                Map<String, Object> map = new HashMap<>();
+                for (int i = 0; i < row.length; i++) {
+                    String columnName = i < columnNames.length ? columnNames[i] : "column_" + (i + 1);
+                    map.put(columnName, row[i]);
+                }
+                mappedResults.add(map);
+            }
+            
+            System.out.println("✅ SQL查询成功，返回 " + mappedResults.size() + " 条记录");
+            return mappedResults;
+        } catch (Exception e) {
+            System.err.println("❌ SQL执行失败: " + e.getMessage());
+            throw new RuntimeException("SQL执行失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 从SQL语句中提取列名（简化版本）
+     */
+    private String[] extractColumnNames(String sql) {
+        try {
+            // 提取SELECT和FROM之间的部分
+            String upperSql = sql.toUpperCase();
+            int selectStart = upperSql.indexOf("SELECT");
+            int fromStart = upperSql.indexOf("FROM");
+            
+            if (selectStart == -1 || fromStart == -1) {
+                return new String[0];
+            }
+            
+            String columnsPart = sql.substring(selectStart + 6, fromStart).trim();
+            
+            // 处理 SELECT * 的情况
+            if (columnsPart.equals("*")) {
+                // 无法确定具体列名，返回通用名称
+                return new String[]{"id", "name", "type", "description", "created_at"};
+            }
+            
+            // 分割列名
+            String[] columns = columnsPart.split(",");
+            String[] result = new String[columns.length];
+            
+            for (int i = 0; i < columns.length; i++) {
+                String col = columns[i].trim();
+                
+                // 处理别名情况：column AS alias 或 column alias
+                if (col.toUpperCase().contains(" AS ")) {
+                    String[] parts = col.split("(?i)\\s+AS\\s+");
+                    String alias = parts[parts.length - 1].trim();
+                    // 移除可能的引号
+                    alias = alias.replaceAll("[`\"']", "");
+                    result[i] = alias;
+                } else {
+                    // 取最后一个部分作为列名（处理 table.column 的情况）
+                    String[] parts = col.split("\\.");
+                    String lastPart = parts[parts.length - 1].trim();
+                    
+                    // 移除可能的引号
+                    lastPart = lastPart.replaceAll("[`\"']", "");
+                    
+                    // 移除函数调用（如 COUNT(*), MAX(date) 等）
+                    if (lastPart.contains("(")) {
+                        result[i] = lastPart.replaceAll(".*\\((.*)\\).*", "$1").trim();
+                    } else {
+                        result[i] = lastPart;
+                    }
+                }
+            }
+            
+            System.out.println("📋 提取的列名: " + String.join(", ", result));
+            return result;
+        } catch (Exception e) {
+            System.err.println("⚠️ 提取列名失败: " + e.getMessage());
+            return new String[0];
+        }
     }
 }

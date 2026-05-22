@@ -22,6 +22,12 @@ public class NaturalLanguageQueryService {
 
     @Autowired
     private QueryRecordRepository queryRecordRepository;
+    
+    @Autowired(required = false)
+    private AINaturalLanguageService aiService;
+    
+    // 存储AI分析结果，供executeQuery使用
+    private ThreadLocal<Map<String, Object>> aiAnalysisResult = new ThreadLocal<>();
 
     /**
      * 同义词映射表 - 用于意图泛化
@@ -106,10 +112,58 @@ public class NaturalLanguageQueryService {
     }
 
     /**
-     * 基于意图识别的问题类型解析（改进版）
+     * 基于意图识别的问题类型解析（改进版 + AI增强）
      * 支持同义词和自然表达变体
      */
     private QueryType parseQueryTypeWithIntent(String question) {
+        // 清空之前的AI分析结果
+        aiAnalysisResult.remove();
+        
+        // 尝试使用AI分析（如果可用）
+        if (aiService != null) {
+            try {
+                Map<String, Object> aiResult = aiService.analyzeQuestion(question);
+                
+                // 如果AI启用且成功分析
+                if (Boolean.TRUE.equals(aiResult.get("ai_enabled"))) {
+                    String sql = (String) aiResult.get("sql");
+                    if (sql != null && !sql.isEmpty()) {
+                        System.out.println("✅ AI生成SQL: " + sql);
+                        System.out.println("💡 说明: " + aiResult.get("explanation"));
+                        
+                        // 保存AI分析结果供后续使用
+                        aiAnalysisResult.set(aiResult);
+                        
+                        // 返回特殊类型，表示使用AI SQL
+                        return QueryType.AI_SQL;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ AI分析失败，降级到规则匹配: " + e.getMessage());
+            }
+        }
+        
+        // 降级到原有的规则匹配
+        System.out.println("📋 使用规则匹配");
+        return parseQueryTypeWithRules(question);
+    }
+    
+    /**
+     * 将AI返回的字符串类型转换为QueryType枚举
+     */
+    private QueryType convertToQueryType(String aiType) {
+        try {
+            return QueryType.valueOf(aiType);
+        } catch (IllegalArgumentException e) {
+            System.err.println("未知的查询类型: " + aiType + "，使用默认类型");
+            return QueryType.GENERAL_SEARCH;
+        }
+    }
+    
+    /**
+     * 基于规则的意图识别（原有逻辑）
+     */
+    private QueryType parseQueryTypeWithRules(String question) {
         String lowerQuestion = question.toLowerCase().trim();
             
         // 计算每个类别的匹配得分
@@ -316,7 +370,7 @@ public class NaturalLanguageQueryService {
     }
 
     /**
-     * 执行查询（改进版 - 使用更精确的语义匹配）
+     * 执行查询（改进版 - 使用AI分析结果）
      */
     private List<Map<String, Object>> executeQuery(String question, QueryType queryType) {
         List<Map<String, Object>> results = new ArrayList<>();
@@ -355,7 +409,14 @@ public class NaturalLanguageQueryService {
             default:
                 results = generalSearch(question);
                 break;
+            case AI_SQL:
+                // 使用AI生成的SQL直接查询
+                results = executeAISQL();
+                break;
         }
+        
+        // 清空AI分析结果，避免影响下次查询
+        aiAnalysisResult.remove();
         
         return results;
     }
@@ -389,14 +450,26 @@ public class NaturalLanguageQueryService {
         // 首先按类型查询
         List<Facility> facilities = campusInfoService.getFacilitiesByType(facilityType);
         
-        // 如果问题中包含具体位置信息，进一步过滤
-        String campusName = extractCampusName(question);
-        if (campusName != null && !facilities.isEmpty()) {
+        // 尝试使用AI提取的校区过滤
+        Map<String, Object> aiResult = aiAnalysisResult.get();
+        String campusFilter = null;
+        if (aiResult != null && aiResult.get("campus_filter") != null) {
+            campusFilter = (String) aiResult.get("campus_filter");
+            System.out.println("🏫 使用AI提取的校区过滤: " + campusFilter);
+        }
+        
+        // 如果AI没有提供，尝试从问题中提取
+        if (campusFilter == null) {
+            campusFilter = extractCampusName(question);
+        }
+        
+        // 应用校区过滤
+        if (campusFilter != null && !facilities.isEmpty()) {
             // 找到对应校区的建筑ID列表
             List<Campus> campuses = campusInfoService.getAllCampuses();
             Integer campusId = null;
             for (Campus campus : campuses) {
-                if (campus.getName().contains(campusName)) {
+                if (campus.getName().contains(campusFilter)) {
                     campusId = campus.getCampusId();
                     break;
                 }
@@ -410,6 +483,7 @@ public class NaturalLanguageQueryService {
                     .filter(f -> f.getBuilding() != null && f.getBuilding().getCampus() != null 
                         && f.getBuilding().getCampus().getCampusId().equals(finalCampusId))
                     .toList();
+                System.out.println("✅ 校区过滤后剩余 " + facilities.size() + " 条记录");
             }
         }
         
@@ -447,17 +521,28 @@ public class NaturalLanguageQueryService {
      */
     private List<Map<String, Object>> queryBuildings(String question) {
         String lowerQuestion = question.toLowerCase();
-        // 提取校区名称
-        String campusName = extractCampusName(question);
+        
+        // 尝试使用AI提取的校区过滤
+        Map<String, Object> aiResult = aiAnalysisResult.get();
+        String campusFilter = null;
+        if (aiResult != null && aiResult.get("campus_filter") != null) {
+            campusFilter = (String) aiResult.get("campus_filter");
+            System.out.println("🏫 使用AI提取的校区过滤: " + campusFilter);
+        }
+        
+        // 如果AI没有提供，尝试从问题中提取
+        if (campusFilter == null) {
+            campusFilter = extractCampusName(question);
+        }
         
         List<Building> buildings;
-        if (campusName != null) {
+        if (campusFilter != null) {
             // 先找到校区ID
             List<Campus> campuses = campusInfoService.getAllCampuses();
             Integer campusId = null;
             String foundCampusName = null;
             for (Campus campus : campuses) {
-                if (campus.getName().contains(campusName)) {
+                if (campus.getName().contains(campusFilter)) {
                     campusId = campus.getCampusId();
                     foundCampusName = campus.getName();
                     break;
@@ -466,8 +551,9 @@ public class NaturalLanguageQueryService {
             
             if (campusId != null) {
                 buildings = campusInfoService.getBuildingsByCampusId(campusId);
+                System.out.println("✅ 找到 " + buildings.size() + " 栋建筑");
             } else {
-                buildings = campusInfoService.searchBuildings(campusName);
+                buildings = campusInfoService.searchBuildings(campusFilter);
             }
         } else {
             // 提取建筑关键词
@@ -563,8 +649,53 @@ public class NaturalLanguageQueryService {
      */
     private List<Map<String, Object>> queryTeachers(String question) {
         String lowerQuestion = question.toLowerCase();
+        
+        // 尝试使用AI提取的关键词
+        Map<String, Object> aiResult = aiAnalysisResult.get();
+        if (aiResult != null) {
+            @SuppressWarnings("unchecked")
+            List<String> keywords = (List<String>) aiResult.get("keywords");
             
-        // 检查是否是“谁教XXX”或“谁上XXX”的句式
+            if (keywords != null && !keywords.isEmpty()) {
+                String courseKeyword = keywords.get(0); // 取第一个关键词作为课程名
+                System.out.println("🎯 使用AI提取的课程关键词: " + courseKeyword);
+                
+                // 搜索课程
+                List<Course> courses = campusInfoService.searchCourses(courseKeyword);
+                if (!courses.isEmpty()) {
+                    // 找到课程后，返回该课程的授课教师信息
+                    List<Map<String, Object>> results = new ArrayList<>();
+                    for (Course course : courses) {
+                        // 获取该课程的授课教师列表
+                        List<CourseTeacher> courseTeachers = campusInfoService.getTeachersByCourseId(course.getCourseId());
+                            
+                        if (!courseTeachers.isEmpty()) {
+                            for (CourseTeacher ct : courseTeachers) {
+                                Teacher teacher = ct.getTeacher();
+                                Map<String, Object> item = new HashMap<>();
+                                item.put("name", teacher.getName());
+                                item.put("department", teacher.getDepartment() != null ? teacher.getDepartment().getName() : "未知");
+                                item.put("title", teacher.getTitle());
+                                item.put("email", teacher.getEmail());
+                                item.put("phone", teacher.getPhone());
+                                item.put("course", course.getName());
+                                item.put("semester", ct.getSemester());
+                                item.put("role", ct.getRole() != null ? ct.getRole() : "主讲");
+                                results.add(item);
+                            }
+                        } else {
+                            Map<String, Object> item = new HashMap<>();
+                            item.put("course", course.getName());
+                            item.put("note", "该课程暂无授课教师信息");
+                            results.add(item);
+                        }
+                    }
+                    return results;
+                }
+            }
+        }
+            
+        // 检查是否是“谁教XXX”或“谁上XXX”的句式（规则匹配备用）
         boolean isWhoTeaches = lowerQuestion.contains("谁教") || lowerQuestion.contains("授课") || 
                               lowerQuestion.contains("任课") || lowerQuestion.contains("谁上") || 
                               lowerQuestion.contains("谁讲") || lowerQuestion.contains("主讲") ||
@@ -641,15 +772,27 @@ public class NaturalLanguageQueryService {
      */
     private List<Map<String, Object>> queryEvents(String question) {
         String lowerQuestion = question.toLowerCase();
-        // 判断是否查询近期活动
-        boolean upcoming = lowerQuestion.contains("近期") || lowerQuestion.contains("最近") || 
-                          lowerQuestion.contains("下周") || lowerQuestion.contains("有哪些") ||
-                          lowerQuestion.contains("有什么") || lowerQuestion.contains("校园");
+        
+        // 尝试使用AI提取的时间过滤
+        Map<String, Object> aiResult = aiAnalysisResult.get();
+        boolean upcoming = false;
+        
+        if (aiResult != null && aiResult.get("time_filter") != null) {
+            String timeFilter = (String) aiResult.get("time_filter");
+            System.out.println("⏰ 使用AI提取的时间过滤: " + timeFilter);
+            upcoming = true; // AI识别为时间相关查询
+        } else {
+            // 降级到规则匹配
+            upcoming = lowerQuestion.contains("近期") || lowerQuestion.contains("最近") || 
+                      lowerQuestion.contains("下周") || lowerQuestion.contains("有哪些") ||
+                      lowerQuestion.contains("有什么") || lowerQuestion.contains("校园");
+        }
         
         List<Event> events;
         if (upcoming) {
             // 获取未来30天内的活动
             events = campusInfoService.getUpcomingEvents(30);
+            System.out.println("✅ 找到 " + events.size() + " 个近期活动");
         } else {
             String keyword = extractKeyword(question, new String[]{"活动", "讲座", "论坛", "晚会", "比赛", "展览"});
             events = campusInfoService.searchEvents(keyword != null ? keyword : "");
@@ -740,6 +883,30 @@ public class NaturalLanguageQueryService {
     }
 
     /**
+     * 执行AI生成的SQL查询
+     */
+    private List<Map<String, Object>> executeAISQL() {
+        Map<String, Object> aiResult = aiAnalysisResult.get();
+        if (aiResult == null) {
+            return new ArrayList<>();
+        }
+        
+        String sql = (String) aiResult.get("sql");
+        if (sql == null || sql.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            System.out.println("🚀 执行AI生成的SQL...");
+            return campusInfoService.executeNativeSQL(sql);
+        } catch (Exception e) {
+            System.err.println("❌ AI SQL执行失败: " + e.getMessage());
+            // 降级到空结果
+            return new ArrayList<>();
+        }
+    }
+
+    /**
      * 提取校区名称
      */
     private String extractCampusName(String question) {
@@ -813,6 +980,7 @@ public class NaturalLanguageQueryService {
         COURSE("课程查询"),
         TEACHER("教师查询"),
         EVENT("活动查询"),
+        AI_SQL("AI SQL查询"),
         GENERAL_SEARCH("通用搜索");
 
         private final String description;
