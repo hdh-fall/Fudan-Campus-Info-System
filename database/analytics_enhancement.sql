@@ -6,6 +6,29 @@
 USE fudan_campus_info;
 
 -- -----------------------------------------------------------
+-- 0. 清理已存在的对象（避免重复创建错误）
+-- -----------------------------------------------------------
+-- 删除事件
+DROP EVENT IF EXISTS evt_daily_statistics_update;
+
+-- 删除触发器
+DROP TRIGGER IF EXISTS trg_after_query_insert;
+
+-- 删除存储过程
+DROP PROCEDURE IF EXISTS sp_update_query_statistics;
+DROP PROCEDURE IF EXISTS sp_get_personalized_recommendations;
+
+-- 删除统计表
+DROP TABLE IF EXISTS query_statistics_cache;
+
+-- 删除视图
+DROP VIEW IF EXISTS v_popular_query_categories;
+DROP VIEW IF EXISTS v_daily_query_trend;
+DROP VIEW IF EXISTS v_active_users;
+DROP VIEW IF EXISTS v_campus_facility_popularity;
+DROP VIEW IF EXISTS v_course_popularity;
+
+-- -----------------------------------------------------------
 -- 1. 创建视图：热门查询类别统计
 -- -----------------------------------------------------------
 CREATE OR REPLACE VIEW v_popular_query_categories AS
@@ -244,10 +267,66 @@ DELIMITER ;
 -- -----------------------------------------------------------
 -- 11. 额外索引优化（针对统计分析查询）
 -- -----------------------------------------------------------
--- 如果索引不存在则创建
-CREATE INDEX IF NOT EXISTS idx_query_category ON query_record(category);
-CREATE INDEX IF NOT EXISTS idx_query_time_only ON query_record(query_time);
-CREATE INDEX IF NOT EXISTS idx_event_category_time ON event(category, event_time);
+-- 检查并创建索引
+SET @dbname = DATABASE();
+SET @tablename = 'query_record';
+SET @indexname = 'idx_query_category';
+SET @columnname = 'category';
+
+-- 检查索引是否存在
+SET @preparedStatement = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'SELECT 1',
+        CONCAT('CREATE INDEX ', @indexname, ' ON ', @tablename, '(', @columnname, ')')
+    )
+    FROM information_schema.statistics
+    WHERE table_schema = @dbname
+    AND table_name = @tablename
+    AND index_name = @indexname
+);
+PREPARE createIndexStmt FROM @preparedStatement;
+EXECUTE createIndexStmt;
+DEALLOCATE PREPARE createIndexStmt;
+
+-- 创建查询时间索引
+SET @indexname = 'idx_query_time_only';
+SET @columnname = 'query_time';
+
+SET @preparedStatement = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'SELECT 1',
+        CONCAT('CREATE INDEX ', @indexname, ' ON ', @tablename, '(', @columnname, ')')
+    )
+    FROM information_schema.statistics
+    WHERE table_schema = @dbname
+    AND table_name = @tablename
+    AND index_name = @indexname
+);
+PREPARE createIndexStmt FROM @preparedStatement;
+EXECUTE createIndexStmt;
+DEALLOCATE PREPARE createIndexStmt;
+
+-- 创建活动类别和时间索引
+SET @tablename = 'event';
+SET @indexname = 'idx_event_category_time';
+SET @columnname = 'category, event_time';
+
+SET @preparedStatement = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'SELECT 1',
+        CONCAT('CREATE INDEX ', @indexname, ' ON ', @tablename, '(', @columnname, ')')
+    )
+    FROM information_schema.statistics
+    WHERE table_schema = @dbname
+    AND table_name = @tablename
+    AND index_name = @indexname
+);
+PREPARE createIndexStmt FROM @preparedStatement;
+EXECUTE createIndexStmt;
+DEALLOCATE PREPARE createIndexStmt;
 
 -- -----------------------------------------------------------
 -- 12. 示例查询：展示如何使用这些视图和存储过程

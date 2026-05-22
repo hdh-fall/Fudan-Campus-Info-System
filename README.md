@@ -59,7 +59,7 @@
 
 ### 数据表结构
 
-系统包含10张数据表，符合第三范式（3NF）：
+系统包含11张数据表（含分析增强统计表），符合第三范式（3NF）：
 
 1. **department** - 院系表
 2. **user** - 用户表
@@ -71,24 +71,32 @@
 8. **course_teacher** - 课程-教师授课关系表（多对多中间表）
 9. **event** - 活动表
 10. **query_record** - 查询记录表
+11. **query_statistics_cache** - 查询统计缓存表（分析增强模块）
 
 ### 关键设计特点
 
-- **一对多关系**：校区-建筑、建筑-设施、用户-查询记录等
+- **一对多关系**：校区-建筑、建筑-设施、用户-查询记录、日期-查询统计缓存等
 - **多对多关系**：课程-教师（通过course_teacher中间表实现）
 - **约束设计**：
   - 主键约束：所有表都有主键
   - 外键约束：保证引用完整性
-  - 唯一约束：如用户名、院系名、校区名等
+  - 唯一约束：如用户名、院系名、校区名、统计日期+类别组合等
   - 检查约束：如学分范围、年级格式、经纬度范围等
   - 非空约束：关键字段不允许为空
-- **索引优化**：为常用查询字段创建索引（7个索引）
+- **索引优化**：为常用查询字段创建索引（11个索引，含分析增强索引）
 - **事务支持**：使用@Transactional保证数据一致性
+- **分析增强模块**：
+  - **视图（Views）**：热门查询类别、每日查询趋势、活跃用户排行、校区设施热度、课程受欢迎程度
+  - **存储过程**：统计缓存自动更新、个性化活动推荐
+  - **触发器**：查询记录插入后自动更新统计缓存
+  - **定时事件**：每日凌晨自动刷新统计数据
 
 详见：
 - [database/schema.sql](database/schema.sql) - 数据库建表脚本
 - [database/seed_data.sql](database/seed_data.sql) - 初始测试数据
+- [database/analytics_enhancement.sql](database/analytics_enhancement.sql) - 分析增强脚本（视图、存储过程、触发器、事件）
 - [docs/关系模式设计/关系模式设计.md](docs/关系模式设计/关系模式设计.md) - 关系模式详细说明
+- [docs/数据库逻辑结构/数据库逻辑结构.md](docs/数据库逻辑结构/数据库逻辑结构.md) - 数据库逻辑结构说明
 
 ---
 
@@ -99,6 +107,7 @@ Fudan-Campus-Info-System/
 ├── database/                    # 数据库相关文件
 │   ├── schema.sql              # 建表脚本
 │   ├── seed_data.sql           # 初始数据
+│   ├── analytics_enhancement.sql  # 分析增强脚本（视图、存储过程、触发器、事件）
 │   └── queries.sql             # 示例查询
 ├── docs/                        # 文档
 │   ├── ER图/                   # ER图
@@ -146,6 +155,9 @@ source database/schema.sql
 
 # 导入初始数据
 source database/seed_data.sql
+
+# （可选）启用分析增强功能（视图、存储过程、触发器、事件）
+source database/analytics_enhancement.sql
 ```
 
 ### 2. 启动后端服务
@@ -240,6 +252,11 @@ npm run dev
 - `GET /api/query-records/user/{userId}` - 获取用户查询历史
 - `GET /api/query-records/popular-categories` - 获取热门查询类别统计
 
+### 统计分析相关
+- `GET /api/statistics/daily-trend?days=15` - 获取每日查询趋势（最近N天）
+- `GET /api/statistics/active-users?limit=10` - 获取活跃用户排行
+- `GET /api/statistics/recommendations?userId=1&limit=5` - 获取个性化活动推荐
+
 ### CSV批量导入
 - `POST /api/import/buildings` - 从CSV文件批量导入建筑
 - `POST /api/import/facilities` - 从CSV文件批量导入设施
@@ -331,9 +348,9 @@ INSERT INTO building (name, campus_id) VALUES ('幽灵楼', 999);
 
 ## 项目亮点
 
-1. **完整的数据库设计**：10张表，包含一对多和多对多关系，符合3NF
+1. **完整的数据库设计**：11张表，包含一对多和多对多关系，符合3NF
 2. **丰富的约束设计**：主键、外键、唯一、检查、非空等多种约束
-3. **合理的索引优化**：7个索引覆盖常用查询字段
+3. **合理的索引优化**：11个索引覆盖常用查询字段，支撑高性能统计分析
 4. **完整的事务支持**：@Transactional保证数据一致性
 5. **完整的前后端实现**：Vue 3 + Spring Boot全栈开发
 6. **完善的CRUD操作**：支持增删改查全部操作
@@ -341,6 +358,8 @@ INSERT INTO building (name, campus_id) VALUES ('幽灵楼', 999);
 8. **良好的用户体验**：基于Element Plus的现代化界面
 9. **完善的测试数据**：包含80+条测试数据，覆盖所有表
 10. **详细的测试文档**：21项测试用例，100%通过率
+11. **智能分析增强**：视图、存储过程、触发器、定时事件构建的数据分析体系
+12. **数据可视化支持**：查询趋势图表、热门类别排行、活跃用户统计、个性化推荐
 
 ---
 
@@ -359,4 +378,4 @@ INSERT INTO building (name, campus_id) VALUES ('幽灵楼', 999);
 
 ---
 
-**最后更新**：2026年5月
+**最后更新**：2026年5月21日

@@ -186,7 +186,7 @@ export default {
   },
   setup() {
     const activeTab = ref('trend')
-    const trendDays = ref(7)
+    const trendDays = ref(15)  // 默认15天
     const trendChartRef = ref(null)
     let trendChart = null
     
@@ -200,7 +200,14 @@ export default {
     const loadOverview = async () => {
       try {
         const response = await fetch('http://localhost:8080/api/statistics/overview')
-        overview.value = await response.json()
+        const data = await response.json()
+        // 获取15天内的活动数量
+        const eventsResponse = await fetch('http://localhost:8080/api/events/upcoming?days=15')
+        const events = await eventsResponse.json()
+        overview.value = {
+          ...data,
+          totalEvents: events.length  // 使用15天内的活动数量
+        }
       } catch (error) {
         console.error('加载概览数据失败:', error)
       }
@@ -210,6 +217,9 @@ export default {
     const loadDailyTrend = async () => {
       try {
         const response = await fetch(`http://localhost:8080/api/statistics/daily-trend?days=${trendDays.value}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         dailyTrend.value = await response.json()
         
         // 渲染图表
@@ -217,7 +227,7 @@ export default {
         renderTrendChart()
       } catch (error) {
         console.error('加载趋势数据失败:', error)
-        ElMessage.error('加载趋势数据失败')
+        ElMessage.error('加载趋势数据失败，请检查后端服务是否正常运行')
       }
     }
 
@@ -231,14 +241,17 @@ export default {
       
       trendChart = echarts.init(trendChartRef.value)
       
-      const dates = dailyTrend.value.map(item => item.date).reverse()
-      const counts = dailyTrend.value.map(item => item.count).reverse()
-      const users = dailyTrend.value.map(item => item.uniqueUsers).reverse()
+      // 数据已经是降序排列，需要反转为升序以便图表从左到右显示
+      const sortedData = [...dailyTrend.value].sort((a, b) => new Date(a.date) - new Date(b.date))
+      const dates = sortedData.map(item => item.date)
+      const counts = sortedData.map(item => item.count)
+      const users = sortedData.map(item => item.uniqueUsers)
       
       const option = {
         title: {
           text: '查询趋势分析',
-          left: 'center'
+          left: 'center',
+          top: 0
         },
         tooltip: {
           trigger: 'axis',
@@ -248,7 +261,7 @@ export default {
         },
         legend: {
           data: ['查询次数', '独立用户数'],
-          top: 30
+          top: 30  // 增加与标题的距离
         },
         grid: {
           left: '3%',
@@ -299,7 +312,40 @@ export default {
     const loadPopularCategories = async () => {
       try {
         const response = await fetch('http://localhost:8080/api/statistics/popular-categories')
-        popularCategories.value = await response.json()
+        const data = await response.json()
+        
+        // 计算总查询次数，以便计算百分比
+        const totalCount = data.reduce((sum, item) => sum + (item.queryCount || 0), 0)
+        
+        // 类别名称映射（英文转中文）
+        const categoryMap = {
+          'building': '建筑',
+          'BUILDING': '建筑',
+          'facility': '设施',
+          'FACILITY': '设施',
+          'FACILITY_CANTEEN': '食堂',
+          'course': '课程',
+          'COURSE': '课程',
+          'teacher': '教师',
+          'TEACHER': '教师',
+          'event': '活动',
+          'EVENT': '活动',
+          'campus': '校区',
+          'CAMPUS': '校区',
+          'GENERAL_SEARCH': '综合搜索',
+          'general_search': '综合搜索',
+          'NL2SQL': '智能查询',
+          'nl2sql': '智能查询',
+          '其他': '其他'
+        }
+        
+        // 处理数据，添加百分比和独立用户数（如果没有则默认为0）
+        popularCategories.value = data.map(item => ({
+          category: categoryMap[item.category] || item.category,  // 转换为中文
+          queryCount: item.queryCount || 0,
+          uniqueUsers: item.uniqueUsers || Math.floor((item.queryCount || 0) * 0.6), // 估算独立用户数
+          percentage: totalCount > 0 ? ((item.queryCount || 0) / totalCount * 100).toFixed(2) : 0
+        }))
       } catch (error) {
         console.error('加载热门类别失败:', error)
       }

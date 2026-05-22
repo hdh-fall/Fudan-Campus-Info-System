@@ -25,11 +25,11 @@ public interface QueryRecordRepository extends JpaRepository<QueryRecord, Intege
     /**
      * 获取每日查询趋势（最近N天）
      */
-    @Query("SELECT FUNCTION('DATE', qr.queryTime), COUNT(qr), COUNT(DISTINCT qr.user.userId) " +
-           "FROM QueryRecord qr " +
-           "WHERE qr.queryTime >= FUNCTION('DATE_SUB', CURRENT_DATE(), :days) " +
-           "GROUP BY FUNCTION('DATE', qr.queryTime) " +
-           "ORDER BY FUNCTION('DATE', qr.queryTime) DESC")
+    @Query(value = "SELECT DATE(qr.query_time), COUNT(qr.record_id), COUNT(DISTINCT qr.user_id) " +
+           "FROM query_record qr " +
+           "WHERE qr.query_time >= DATE_SUB(CURRENT_DATE(), INTERVAL :days DAY) " +
+           "GROUP BY DATE(qr.query_time) " +
+           "ORDER BY DATE(qr.query_time) DESC", nativeQuery = true)
     List<Object[]> findDailyQueryTrend(@Param("days") int days);
     
     /**
