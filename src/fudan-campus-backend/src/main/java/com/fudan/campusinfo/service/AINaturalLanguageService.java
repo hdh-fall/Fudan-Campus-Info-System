@@ -122,40 +122,59 @@ public class AINaturalLanguageService {
             8. **课程查询时，必须包含教师信息和学期信息，以便区分同名课程**
             9. **学科相关课程查询：使用多个OR条件匹配相关关键词，包括课程名、院系名、描述**
             10. **例如“数学课程”应匹配：数学、代数、分析、几何、概率、统计等关键词**
+            11. **必须返回query_category字段，表示查询的业务类别**
+                
+            query_category可选值：
+            - FACILITY_CANTEEN: 食堂/餐厅/吃饭相关
+            - FACILITY_CAFE: 咖啡厅/饮品/咖啡相关
+            - FACILITY_LIBRARY: 图书馆/阅览室相关
+            - FACILITY_STUDY_ROOM: 自习室/学习空间相关
+            - FACILITY_LAB: 实验室/机房相关
+            - BUILDING: 建筑/教学楼/宿舍/位置相关
+            - CAMPUS: 校区介绍/校区地址相关
+            - COURSE: 课程/选课/学分相关
+            - TEACHER: 教师/授课/联系方式相关
+            - EVENT: 活动/讲座/比赛/展览相关
+            - GENERAL_SEARCH: 其他通用查询
                 
             示例1：
             用户问题：“复旦有哪些食堂？”
             返回：{
               "sql": "SELECT f.name AS name, f.type AS type, b.name AS building_name, c.name AS campus_name FROM facility f LEFT JOIN building b ON f.building_id = b.building_id LEFT JOIN campus c ON b.campus_id = c.campus_id WHERE f.type = '食堂'",
-              "explanation": "查询所有食堂及其位置信息"
+              "explanation": "查询所有食堂及其位置信息",
+              "query_category": "FACILITY_CANTEEN"
             }
                             
             示例2：
             用户问题：“邯郸校区有哪些教学楼？”
             返回：{
               "sql": "SELECT b.name AS name, b.type AS type, c.name AS campus_name FROM building b LEFT JOIN campus c ON b.campus_id = c.campus_id WHERE c.name LIKE '%%邯郸%%' AND b.type = '教学楼'",
-              "explanation": "查询邯郸校区的教学楼"
+              "explanation": "查询邯郸校区的教学楼",
+              "query_category": "BUILDING"
             }
                             
             示例3：
             用户问题：“数据库课程是谁开的？”
             返回：{
               "sql": "SELECT co.name AS course_name, t.name AS teacher_name, t.title AS title, t.email AS email, ct.semester AS semester, ct.role AS role FROM course co LEFT JOIN course_teacher ct ON co.course_id = ct.course_id LEFT JOIN teacher t ON ct.teacher_id = t.teacher_id WHERE co.name LIKE '%%数据库%%'",
-              "explanation": "查询数据库课程的授课教师（同名课程会显示不同教师和学期）"
+              "explanation": "查询数据库课程的授课教师（同名课程会显示不同教师和学期）",
+              "query_category": "COURSE"
             }
                             
             示例4：
             用户问题：“最近有哪些校园讲座？”
             返回：{
               "sql": "SELECT e.name AS event_name, e.event_time AS event_time, e.location_desc AS location, e.organizer AS organizer, e.category AS category FROM event e WHERE e.event_time >= NOW() AND e.category LIKE '%%讲座%%' ORDER BY e.event_time ASC LIMIT 20",
-              "explanation": "查询未来的讲座活动"
+              "explanation": "查询未来的讲座活动",
+              "query_category": "EVENT"
             }
                 
             示例5：
             用户问题：“有哪些数学课程？”
             返回：{
               "sql": "SELECT co.name AS course_name, d.name AS department_name, co.credits AS credits, t.name AS teacher_name, ct.semester AS semester FROM course co LEFT JOIN department d ON co.department_id = d.department_id LEFT JOIN course_teacher ct ON co.course_id = ct.course_id LEFT JOIN teacher t ON ct.teacher_id = t.teacher_id WHERE co.name LIKE '%%数学%%' OR co.name LIKE '%%代数%%' OR co.name LIKE '%%分析%%' OR d.name LIKE '%%数学%%'",
-              "explanation": "查询数学相关课程（包括高等代数、数学分析等，同名课程会按教师和学期分别显示）"
+              "explanation": "查询数学相关课程（包括高等代数、数学分析等，同名课程会按教师和学期分别显示）",
+              "query_category": "COURSE"
             }
                 
             现在请分析以下问题：
@@ -203,16 +222,27 @@ public class AINaturalLanguageService {
         
         // 提取生成的文本
         String generatedText = rootNode.path("output").path("text").asText();
+        System.out.println("🤖 AI原始响应: " + generatedText);
         
         // 提取JSON部分（可能包含在文本中）
         String jsonStr = extractJson(generatedText);
+        System.out.println("📋 提取的JSON: " + jsonStr);
         
         // 解析JSON
         JsonNode resultNode = objectMapper.readTree(jsonStr);
         
         Map<String, Object> result = new HashMap<>();
-        result.put("sql", resultNode.path("sql").asText(""));
-        result.put("explanation", resultNode.path("explanation").asText(""));
+        String sql = resultNode.path("sql").asText("");
+        String explanation = resultNode.path("explanation").asText("");
+        String queryCategory = resultNode.path("query_category").asText("GENERAL_SEARCH");
+        
+        result.put("sql", sql);
+        result.put("explanation", explanation);
+        result.put("query_category", queryCategory);
+        
+        System.out.println("✅ SQL: " + sql);
+        System.out.println("✅ 说明: " + explanation);
+        System.out.println("✅ 类别: " + queryCategory);
         
         return result;
     }

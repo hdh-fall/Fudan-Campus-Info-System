@@ -47,11 +47,21 @@ public class NaturalLanguageQueryService {
             "cafe", "饮品", "饮料", "喝咖啡", "奶茶", "休息", "聊天", "咖啡店", "咖啡馆",
             "下午茶", "甜品", "果汁", "星巴克"
         ));
-        // 图书馆/自习室相关
-        SYNONYM_MAP.put("学习", Arrays.asList(
-            "自习", "阅览室", "看书", "复习", "备考", "安静", "哪里可以学习", "找个地方学习",
-            "学习的地方", "图书馆在哪里", "哪里可以自习", "借书", "还书",
-            "写作业", "做研究", "查资料", "阅读"
+        // 图书馆相关
+        SYNONYM_MAP.put("图书馆", Arrays.asList(
+            "阅览", "借书", "还书", "阅览室", "图书", "书籍", "阅读",
+            "查资料", "做研究", "藏书", "书库"
+        ));
+        // 自习室相关
+        SYNONYM_MAP.put("自习", Arrays.asList(
+            "学习", "看书", "复习", "备考", "安静", "哪里可以学习", "找个地方学习",
+            "学习的地方", "哪里可以自习", "写作业", "自习室",
+            "上自习", "温习", "功课"
+        ));
+        // 实验室相关
+        SYNONYM_MAP.put("实验", Arrays.asList(
+            "机房", "实验室", "电脑房", "计算机房", "做实验", "实验课",
+            "上机", "编程", "代码", "计算机"
         ));
         // 建筑相关 - 覆盖各种问路场景
         SYNONYM_MAP.put("楼", Arrays.asList(
@@ -100,13 +110,23 @@ public class NaturalLanguageQueryService {
         QueryType queryType = parseQueryTypeWithIntent(question);
         result.put("queryType", queryType.getDescription());
         
+        // 在执行查询前，先保存AI分析的类别（因为executeQuery会清空ThreadLocal）
+        String aiCategory = null;
+        if (queryType == QueryType.AI_SQL) {
+            Map<String, Object> aiResult = aiAnalysisResult.get();
+            if (aiResult != null && aiResult.containsKey("query_category")) {
+                aiCategory = (String) aiResult.get("query_category");
+                System.out.println("💾 提前保存AI类别: " + aiCategory);
+            }
+        }
+        
         // 执行对应的查询
         List<Map<String, Object>> data = executeQuery(question, queryType);
         result.put("data", data);
         result.put("count", data.size());
         
-        // 保存查询记录
-        saveQueryRecord(userId, question, queryType, data);
+        // 保存查询记录（传入AI类别）
+        saveQueryRecord(userId, question, queryType, data, aiCategory);
         
         return result;
     }
@@ -123,6 +143,7 @@ public class NaturalLanguageQueryService {
         if (aiService != null) {
             try {
                 Map<String, Object> aiResult = aiService.analyzeQuestion(question);
+                System.out.println("🔍 AI返回的完整结果: " + aiResult);
                 
                 // 如果AI启用且成功分析
                 if (Boolean.TRUE.equals(aiResult.get("ai_enabled"))) {
@@ -130,6 +151,7 @@ public class NaturalLanguageQueryService {
                     if (sql != null && !sql.isEmpty()) {
                         System.out.println("✅ AI生成SQL: " + sql);
                         System.out.println("💡 说明: " + aiResult.get("explanation"));
+                        System.out.println("📋 query_category: " + aiResult.get("query_category"));
                         
                         // 保存AI分析结果供后续使用
                         aiAnalysisResult.set(aiResult);
@@ -140,6 +162,7 @@ public class NaturalLanguageQueryService {
                 }
             } catch (Exception e) {
                 System.err.println("⚠️ AI分析失败，降级到规则匹配: " + e.getMessage());
+                e.printStackTrace();
             }
         }
         
@@ -193,15 +216,27 @@ public class NaturalLanguageQueryService {
             scores.put(QueryType.FACILITY_CAFE, calculateMatchScore(lowerQuestion, "咖啡"));
         }
             
-        // 图书馆/自习室相关
-        if (matchesIntent(lowerQuestion, "学习")) {
-            int score = calculateMatchScore(lowerQuestion, "学习");
+        // 图书馆相关
+        if (matchesIntent(lowerQuestion, "图书馆") || matchesIntent(lowerQuestion, "阅览")) {
+            int score = calculateMatchScore(lowerQuestion, "图书馆");
+            scores.put(QueryType.FACILITY_LIBRARY, score);
+        }
+        
+        // 自习室相关
+        if (matchesIntent(lowerQuestion, "自习") || matchesIntent(lowerQuestion, "学习")) {
+            int score = calculateMatchScore(lowerQuestion, "自习");
             // “哪里可以学习”、“找个地方学习”等强意图表达额外加分
             if (lowerQuestion.contains("哪里可以学习") || lowerQuestion.contains("找个地方学习") ||
                 lowerQuestion.contains("学习的地方") || lowerQuestion.contains("哪里可以自习")) {
                 score += 8;
             }
-            scores.put(QueryType.FACILITY_LIBRARY, score);
+            scores.put(QueryType.FACILITY_STUDY_ROOM, score);
+        }
+        
+        // 实验室相关
+        if (matchesIntent(lowerQuestion, "实验") || matchesIntent(lowerQuestion, "机房")) {
+            int score = calculateMatchScore(lowerQuestion, "实验");
+            scores.put(QueryType.FACILITY_LAB, score);
         }
         
         // 建筑相关 - 检测“教学楼”、“有哪些建筑”等
@@ -946,7 +981,7 @@ public class NaturalLanguageQueryService {
     /**
      * 保存查询记录
      */
-    private void saveQueryRecord(Integer userId, String question, QueryType queryType, List<Map<String, Object>> data) {
+    private void saveQueryRecord(Integer userId, String question, QueryType queryType, List<Map<String, Object>> data, String aiCategory) {
         try {
             QueryRecord record = new QueryRecord();
             
@@ -957,14 +992,41 @@ public class NaturalLanguageQueryService {
             
             record.setQuestion(question);
             record.setQueryTime(LocalDateTime.now());
-            record.setCategory(queryType.name());
+            
+            System.out.println("📝 保存查询记录 - 问题: " + question);
+            System.out.println("📝 保存查询记录 - queryType: " + queryType.name());
+            System.out.println("📝 保存查询记录 - aiCategory: " + aiCategory);
+            
+            // 确定最终类别
+            String category;
+            if (queryType == QueryType.AI_SQL && aiCategory != null) {
+                // 使用AI分析的类别
+                try {
+                    QueryType realType = QueryType.valueOf(aiCategory);
+                    category = realType.name();
+                    System.out.println("✅ AI分类成功: " + category);
+                } catch (IllegalArgumentException e) {
+                    // 如果AI返回的类别无效，使用GENERAL_SEARCH
+                    category = QueryType.GENERAL_SEARCH.name();
+                    System.out.println("⚠️ AI返回无效类别: '" + aiCategory + "'，使用默认类别");
+                }
+            } else {
+                // 非AI查询或AI未提供类别，使用规则匹配的类别
+                category = queryType.name();
+                System.out.println("📋 使用规则匹配类别: " + category);
+            }
+            
+            System.out.println("💾 最终保存的类别: " + category);
+            record.setCategory(category);
             record.setResultSummary(data.size() + "条结果");
             record.setUsedNl2sql(true);
             
             queryRecordRepository.save(record);
+            System.out.println("✅ 查询记录保存成功");
         } catch (Exception e) {
             // 记录失败不影响查询结果
-            System.err.println("保存查询记录失败: " + e.getMessage());
+            System.err.println("❌ 保存查询记录失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -974,7 +1036,9 @@ public class NaturalLanguageQueryService {
     enum QueryType {
         FACILITY_CANTEEN("食堂查询"),
         FACILITY_CAFE("咖啡厅查询"),
-        FACILITY_LIBRARY("图书馆/自习室查询"),
+        FACILITY_LIBRARY("图书馆查询"),
+        FACILITY_STUDY_ROOM("自习室查询"),
+        FACILITY_LAB("实验室查询"),
         BUILDING("建筑查询"),
         CAMPUS("校区查询"),
         COURSE("课程查询"),

@@ -335,8 +335,34 @@ export default {
     }
 
     onMounted(() => {
-      loadCourses()
-      loadTeachers()
+      // 检查是否有推荐导航数据
+      const navDataStr = sessionStorage.getItem('recommendNavData')
+      if (navDataStr) {
+        try {
+          const navData = JSON.parse(navDataStr)
+          console.log('收到推荐导航数据:', navData)
+          
+          // 如果有searchKeyword，自动填充搜索框并执行搜索
+          if (navData.searchKeyword) {
+            courseSearchKeyword.value = navData.searchKeyword
+            searchCourses()
+          } else {
+            loadCourses()
+            loadTeachers()
+          }
+          
+          // 清除已处理的导航数据
+          sessionStorage.removeItem('recommendNavData')
+        } catch (e) {
+          console.error('解析导航数据失败:', e)
+          loadCourses()
+          loadTeachers()
+        }
+      } else {
+        // 正常加载
+        loadCourses()
+        loadTeachers()
+      }
       
       // 检查是否有从快速搜索传来的详情数据
       const detailData = localStorage.getItem('viewDetailData')
@@ -348,10 +374,8 @@ export default {
             setTimeout(() => {
               if (parsed.category === '课程') {
                 viewCourseDetail(parsed.data)
-                ElMessage.success(`正在查看课程详情：${parsed.data.name}`)
               } else {
                 viewTeacherCourses(parsed.data)
-                ElMessage.success(`正在查看教师详情：${parsed.data.name}`)
               }
             }, 500)
           }

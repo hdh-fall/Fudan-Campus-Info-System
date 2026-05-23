@@ -196,7 +196,32 @@ export default {
     }
 
     onMounted(() => {
-      loadFacilities()
+      // 检查是否有推荐导航数据
+      const navDataStr = sessionStorage.getItem('recommendNavData')
+      if (navDataStr) {
+        try {
+          const navData = JSON.parse(navDataStr)
+          console.log('收到推荐导航数据:', navData)
+          
+          // 如果有filterType，直接切换到对应的tab
+          if (navData.filterType) {
+            console.log('使用filterType:', navData.filterType)
+            activeTab.value = navData.filterType
+            loadFacilities(navData.filterType)
+          } else {
+            loadFacilities()
+          }
+          
+          // 清除已处理的导航数据
+          sessionStorage.removeItem('recommendNavData')
+        } catch (e) {
+          console.error('解析导航数据失败:', e)
+          loadFacilities()
+        }
+      } else {
+        // 正常加载
+        loadFacilities()
+      }
       
       // 检查是否有从快速搜索传来的详情数据
       const detailData = localStorage.getItem('viewDetailData')
@@ -207,7 +232,6 @@ export default {
             // 延迟执行，等待数据加载完成
             setTimeout(() => {
               viewDetail(parsed.data)
-              ElMessage.success(`正在查看设施详情：${parsed.data.name}`)
             }, 500)
           }
           // 清除已处理的详情数据

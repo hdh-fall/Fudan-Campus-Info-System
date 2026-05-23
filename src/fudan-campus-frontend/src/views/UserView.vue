@@ -257,14 +257,26 @@ export default {
         'FACILITY_CANTEEN': '食堂',
         'FACILITY_CAFE': '咖啡厅',
         'FACILITY_LIBRARY': '图书馆',
-        'FACILITY_SPORTS': '体育设施',
+        'FACILITY_STUDY_ROOM': '自习室',
         'FACILITY_LAB': '实验室',
         'BUILDING': '建筑',
         'CAMPUS': '校区',
         'COURSE': '课程',
         'TEACHER': '教师',
         'EVENT': '活动',
-        'GENERAL_SEARCH': '搜索'
+        'AI_SQL': '智能问答',
+        'GENERAL_SEARCH': '搜索',
+        // 兼容旧数据（中文格式）
+        '图书馆': '图书馆',
+        '自习室': '自习室',
+        '实验室': '实验室',
+        '食堂': '食堂',
+        '咖啡厅': '咖啡厅',
+        '建筑': '建筑',
+        '校区': '校区',
+        '课程': '课程',
+        '教师': '教师',
+        '活动': '活动'
       }
       return categoryMap[category] || category || '其他'
     }

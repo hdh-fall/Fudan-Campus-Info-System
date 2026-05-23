@@ -175,7 +175,6 @@ export default {
             // 延迟执行，等待数据加载完成
             setTimeout(() => {
               viewBuildingDetail(parsed.data)
-              ElMessage.success(`正在查看建筑详情：${parsed.data.name}`)
             }, 500)
           }
           // 清除已处理的详情数据

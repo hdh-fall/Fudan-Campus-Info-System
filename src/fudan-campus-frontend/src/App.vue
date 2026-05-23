@@ -3,7 +3,10 @@
     <el-container>
       <el-header>
         <div class="header-content">
-          <h1>复旦校园百事通</h1>
+          <div class="header-title">
+            <img src="/fudan-logo.png" alt="复旦大学校徽" class="header-logo" />
+            <h1>复旦校园百事通</h1>
+          </div>
           <el-menu mode="horizontal" :default-active="activeMenu" @select="handleMenuSelect">
             <el-menu-item index="home">首页</el-menu-item>
             <el-menu-item index="campus">校区建筑</el-menu-item>
@@ -127,73 +130,105 @@ export default {
 
 <style>
 #app {
-  font-family: 'Microsoft YaHei', Arial, sans-serif;
+  font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
   min-height: 100vh;
 }
 
 .el-header {
-  background-color: #409EFF;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 0;
   height: auto !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(10px);
 }
 
 .header-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px 8px 20px;
+}
+
+.header-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2)) brightness(1.05);
+  transition: all 0.3s ease;
+}
+
+.header-logo:hover {
+  transform: rotate(5deg) scale(1.05);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3)) brightness(1.1);
 }
 
 .header-content h1 {
   margin: 0;
-  padding: 15px 20px 10px 20px;
-  font-size: 24px;
-  font-weight: bold;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  font-size: 22px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1.5px;
+  text-shadow: none;
 }
 
 .el-menu {
   border-bottom: none !important;
   background-color: transparent !important;
-  padding: 0 20px 10px 20px;
+  padding: 0 20px 12px 20px;
 }
 
 .el-menu-item {
-  color: white !important;
-  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 14px;
   font-weight: 500;
-  height: 40px;
-  line-height: 40px;
-  border-radius: 4px;
-  margin: 0 2px;
+  height: 38px;
+  line-height: 38px;
+  border-radius: 8px;
+  margin: 0 3px;
+  padding: 0 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .el-menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
   color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
 }
 
 .el-menu-item.is-active {
-  background-color: rgba(255, 255, 255, 0.35) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
   color: white !important;
-  font-weight: bold;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
 }
 
 .el-main {
-  min-height: calc(100vh - 160px);
-  background-color: #f5f7fa;
-  padding: 20px;
+  min-height: calc(100vh - 140px);
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 24px;
 }
 
 .el-footer {
-  background-color: #303133;
-  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: rgba(255, 255, 255, 0.9);
   text-align: center;
-  line-height: 60px;
-  font-size: 14px;
+  line-height: 50px;
+  font-size: 13px;
+  box-shadow: 0 -2px 12px rgba(102, 126, 234, 0.2);
 }
 
 /* 确保内容不被遮挡 */
@@ -206,5 +241,22 @@ export default {
 .home {
   margin-top: 0;
   padding-top: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-content h1 {
+    font-size: 18px;
+  }
+  
+  .header-logo {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .el-menu-item {
+    font-size: 13px;
+    padding: 0 12px;
+  }
 }
 </style>

@@ -324,6 +324,10 @@ export default {
           'facility': '设施',
           'FACILITY': '设施',
           'FACILITY_CANTEEN': '食堂',
+          'FACILITY_CAFE': '咖啡厅',
+          'FACILITY_LIBRARY': '图书馆',
+          'FACILITY_STUDY_ROOM': '自习室',
+          'FACILITY_LAB': '实验室',
           'course': '课程',
           'COURSE': '课程',
           'teacher': '教师',
@@ -332,11 +336,24 @@ export default {
           'EVENT': '活动',
           'campus': '校区',
           'CAMPUS': '校区',
+          'AI_SQL': '智能问答',
+          'ai_sql': '智能问答',
           'GENERAL_SEARCH': '综合搜索',
           'general_search': '综合搜索',
           'NL2SQL': '智能查询',
           'nl2sql': '智能查询',
-          '其他': '其他'
+          '其他': '其他',
+          // 兼容旧数据（中文格式）
+          '图书馆': '图书馆',
+          '自习室': '自习室',
+          '实验室': '实验室',
+          '食堂': '食堂',
+          '咖啡厅': '咖啡厅',
+          '建筑': '建筑',
+          '校区': '校区',
+          '课程': '课程',
+          '教师': '教师',
+          '活动': '活动'
         }
         
         // 处理数据，添加百分比和独立用户数（如果没有则默认为0）

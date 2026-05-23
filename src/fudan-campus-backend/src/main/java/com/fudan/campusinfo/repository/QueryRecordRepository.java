@@ -41,4 +41,16 @@ public interface QueryRecordRepository extends JpaRepository<QueryRecord, Intege
            "GROUP BY qr.user.userId, qr.user.username, qr.user.name " +
            "ORDER BY COUNT(qr) DESC")
     List<Object[]> findActiveUsers(@Param("limit") int limit);
+    
+    /**
+     * 获取用户最近的查询记录（用于个性化推荐）
+     * @param userId 用户ID
+     * @param limit 限制数量
+     * @return 类别和数量的列表
+     */
+    @Query("SELECT qr.category, COUNT(qr) FROM QueryRecord qr " +
+           "WHERE qr.user.userId = :userId " +
+           "GROUP BY qr.category " +
+           "ORDER BY MAX(qr.queryTime) DESC")
+    List<Object[]> findRecentQueriesByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
 }
