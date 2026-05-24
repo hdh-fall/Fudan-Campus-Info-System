@@ -16,7 +16,7 @@
 
 ## 系统功能
 
-### 1. 🤖 AI智能问答
+### 1. AI智能问答
 - **自然语言查询**：支持用日常语言提问，如“复旦有哪些食堂？”、“数据库课程是谁开的？”
 - **AI语义理解**：基于通义千问大模型，理解用户意图并生成SQL查询
 - **智能类别识别**：自动识别10种查询类别（图书馆、自习室、实验室等独立分类）
@@ -25,7 +25,7 @@
 - **学科语义扩展**：查询“数学课程”可返回高等代数、线性代数等相关课程
 - **自动降级机制**：AI失败时自动切换到规则匹配，保证系统可用性
 
-### 2. 🎯 个性化推荐
+### 2. 个性化推荐
 - **基于历史的推荐**：根据用户查询历史智能推荐相关内容
 - **全类别覆盖**：支持10种查询类别的个性化推荐
 - **精准跳转**：点击推荐直接跳转到对应的筛选列表
@@ -54,7 +54,7 @@
 - 搜索活动名称或主办方
 - 查看活动详细信息（时间、地点、主办方等）
 
-### 7. 📊 数据分析
+### 7. 数据分析
 - **查询趋势图表**：每日查询次数可视化展示
 - **热门类别排行**：10种查询类别的排行榜
 - **活跃用户统计**：用户活跃度评分和排名
@@ -132,29 +132,65 @@ Fudan-Campus-Info-System/
 │   ├── schema.sql              # 建表脚本
 │   ├── seed_data.sql           # 初始数据
 │   ├── analytics_enhancement.sql  # 分析增强脚本（视图、存储过程、触发器、事件）
-│   └── queries.sql             # 示例查询
-├── docs/                        # 文档
-│   ├── ER图/                   # ER图
-│   ├── 关系模式设计/            # 关系模式说明
-│   ├── 数据库逻辑结构/          # 数据库逻辑结构
-│   └── 需求分析/               # 需求分析文档
+│   ├── queries.sql             # 示例查询
+│   ├── test_report.md          # 数据库自我测试报告
+│   └── csv_templates/          # CSV批量导入模板
+│       ├── README.md
+│       ├── buildings_example.csv
+│       ├── courses_example.csv
+│       ├── events_example.csv
+│       ├── facilities_example.csv
+│       └── teachers_example.csv
+├── docs/                        # 项目文档
+│   ├── ER图/
+│   │   └── ER图.png            # 实体关系图
+│   ├── 关系模式设计/
+│   │   ├── 关系模式设计.md      # 关系模式详细说明
+│   │   └── 关系模式设计.pdf
+│   ├── 数据库逻辑结构/
+│   │   ├── 数据库逻辑结构.md    # 数据库逻辑结构说明
+│   │   └── 数据库逻辑结构.pdf
+│   └── 需求分析/
+│       ├── 需求说明.md          # 需求分析文档
+│       └── 需求说明.pdf
 ├── src/
 │   ├── fudan-campus-backend/   # 后端项目（Spring Boot）
 │   │   ├── src/main/java/com/fudan/campusinfo/
-│   │   │   ├── entity/         # 实体类
-│   │   │   ├── repository/     # 数据访问层
-│   │   │   ├── service/        # 业务逻辑层
-│   │   │   ├── controller/     # 控制器层
-│   │   │   └── config/         # 配置类
-│   │   └── src/main/resources/
-│   │       └── application.properties  # 配置文件
+│   │   │   ├── entity/         # 实体类（10个）
+│   │   │   ├── repository/     # 数据访问层（10个Repository）
+│   │   │   ├── service/        # 业务逻辑层（含AI、推荐、CSV导入等）
+│   │   │   ├── controller/     # 控制器层（RESTful API）
+│   │   │   ├── config/         # 配置类（CORS等）
+│   │   │   └── FudanCampusBackendApplication.java
+│   │   ├── src/main/resources/
+│   │   │   ├── application.properties  # 配置文件
+│   │   │   └── application.example.properties
+│   │   ├── pom.xml             # Maven依赖配置
+│   │   └── mvnw                # Maven Wrapper
 │   └── fudan-campus-frontend/  # 前端项目（Vue 3）
 │       ├── src/
 │       │   ├── api/            # API调用模块
-│       │   ├── views/          # 页面组件
-│       │   └── App.vue         # 主应用组件
-│       └── package.json        # 前端依赖
-└── README.md                   # 项目说明
+│       │   │   └── index.js
+│       │   ├── views/          # 页面组件（9个视图）
+│       │   │   ├── HomeView.vue        # 首页（含AI问答、推荐）
+│       │   │   ├── CampusView.vue      # 校区建筑
+│       │   │   ├── FacilityView.vue    # 校园设施
+│       │   │   ├── CourseView.vue      # 课程教师
+│       │   │   ├── EventView.vue       # 校园活动
+│       │   │   ├── UserView.vue        # 个人中心
+│       │   │   ├── AdminView.vue       # 管理后台
+│       │   │   └── AnalyticsView.vue   # 数据分析
+│       │   ├── components/     # 公共组件
+│       │   ├── App.vue         # 主应用组件
+│       │   └── main.js         # 入口文件
+│       ├── public/
+│       │   └── favicon.ico
+│       ├── package.json        # 前端依赖
+│       ├── vite.config.js      # Vite配置
+│       └── index.html
+├── .gitignore
+├── README.md                   # 项目说明（本文件）
+└── 主要功能实现结果及阶段演示说明.md  # 功能实现与演示文档
 ```
 
 ---
@@ -213,8 +249,6 @@ java -jar target/campus-info-0.0.1-SNAPSHOT.jar
    ```
 3. **重启后端服务**：重新运行后端即可启用AI功能
 
-**免费额度**：新用户可获得100万token的免费额度，足够日常使用。
-
 **降级机制**：如果未配置API Key或AI服务不可用，系统会自动切换到规则匹配模式，保证基本功能可用。
 
 ### 3. 启动前端服务
@@ -266,10 +300,6 @@ npm run dev
 - **同名区分**：同一课程不同学期或不同教师会分别显示
 - **中文显示**：所有字段名自动转换为中文，如`course_name` → “课程名称”
 - **时间格式化**：活动时间自动格式化为友好格式
-
-详见：
-- [AI_INTEGRATION_GUIDE.md](AI_INTEGRATION_GUIDE.md) - AI集成详细指南
-- [QUICK_START_AI.md](QUICK_START_AI.md) - AI功能快速启动
 
 ---
 
@@ -342,62 +372,61 @@ npm run dev
 
 ---
 
-## 示例查询
+## 数据库测试
 
-系统设计了多种SQL查询，详见 [database/queries.sql](database/queries.sql)：
+系统已完成完整的数据库自我测试，所有测试用例均已通过。
 
-1. **多表连接查询**：邯郸校区所有建筑及其设施数量
-2. **聚合查询**：各院系课程数量统计
-3. **多表连接查询**：王建国老师的所有授课课程
-4. **业务统计查询**：近30天热门查询类别
-5. **条件查询**：未来一周即将举办的活动
-6. **约束验证**：测试数据约束是否生效
+### 测试概览
 
----
+| 测试类别 | 测试项数量 | 通过数量 | 状态 |
+|---------|-----------|---------|------|
+| 数据正确性测试 | 8项 | 8项 | ✅ 全部通过 |
+| 基本功能测试 | 6项 | 6项 | ✅ 全部通过 |
+| 查询测试 | 5项 | 5项 | ✅ 全部通过 |
+| 边界情况测试 | 3项 | 3项 | ✅ 全部通过 |
 
-## 自我测试
+### 测试内容
 
-### 1. 数据正确性测试
+#### 1. 数据正确性测试（8项）
+- ✅ 重复校区名插入约束验证
+- ✅ 学分超范围CHECK约束验证
+- ✅ 不存在外键引用约束验证
+- ✅ RESTRICT删除保护验证
+- ✅ CASCADE删除联动验证
+- ✅ 合法数据插入（106条记录）
+- ✅ 用户角色默认值验证
+- ✅ 邮箱格式校验验证
 
-**测试1：插入合法数据**
-```sql
--- 应该成功
-INSERT INTO campus (name, address) VALUES ('测试校区', '测试地址');
-```
+#### 2. 基本功能测试（6项）
+- ✅ 查询所有校区（4条记录）
+- ✅ 查询建筑及校区（JOIN查询，12条记录）
+- ✅ 查询设施及建筑（JOIN查询，20条记录）
+- ✅ 更新用户信息
+- ✅ 删除查询记录
+- ✅ CSV批量导入功能
 
-**测试2：插入违反约束的数据**
-```sql
--- 应该失败：学分超出范围
-INSERT INTO course (name, department_id, credits) VALUES ('测试课程', 1, 25.0);
+#### 3. 查询测试（5项）
+- ✅ 多表连接查询：邯郸校区建筑及设施数量
+- ✅ 多表连接查询：王建国的授课课程
+- ✅ 聚合查询：各院系课程数量统计
+- ✅ 业务统计查询：近30天热门查询类别
+- ✅ 时序查询：未来一周即将举办的活动
 
--- 应该失败：年级格式错误
-INSERT INTO user (username, name, grade) VALUES ('testuser', '测试', '大二');
+#### 4. 边界情况测试（3项）
+- ✅ 空数据查询处理
+- ✅ NULL外键允许（event表campus_id可为NULL）
+- ✅ SET NULL删除联动验证
 
--- 应该失败：引用不存在的外键
-INSERT INTO building (name, campus_id) VALUES ('幽灵楼', 999);
-```
+### 测试结果总结
 
-### 2. 基本功能测试
+✅ **10张表全部创建成功**，约束（主键、外键、CHECK、UNIQUE、DEFAULT、ENUM）均生效  
+✅ **106条初始数据导入成功**，覆盖所有表  
+✅ **所有基础查询、多表连接查询、聚合查询返回正确结果**  
+✅ **约束拦截了不合法数据**，保护了数据完整性  
+✅ **CASCADE删除联动正确**，RESTRICT删除保护正确  
+✅ **数据库已就绪**，可支撑后续后端和前端开发联调
 
-- **新增**：在管理后台添加建筑、设施、课程等
-- **查询**：在各页面搜索和浏览数据
-- **修改**：点击“编辑”按钮修改数据名称
-- **删除**：在管理后台删除数据
-
-详见 [TESTING.md](TESTING.md) - 完整的自我测试文档
-
-### 3. 查询测试
-
-- 多表连接查询是否正确返回结果
-- 聚合查询统计数据是否准确
-- 搜索功能是否能找到相关数据
-
-### 4. 边界情况测试
-
-- 空数据情况下的显示
-- 重复输入的处理
-- 非法外键引用的处理
-- 删除关联数据时的表现（CASCADE/RESTRICT）
+详细测试报告请查看：[database/test_report.md](database/test_report.md)
 
 ---
 
