@@ -11,6 +11,8 @@
 - **后端**：Spring Boot 4.0.6 + Spring Data JPA + Hibernate 7.x
 - **数据库**：MySQL 8.0（含视图、存储过程、触发器、定时事件）
 - **AI集成**：阿里云通义千问大模型（可选）
+  
+**GitHub仓库**：https://github.com/hdh-fall/Fudan-Campus-Info-System
 
 ---
 
@@ -128,69 +130,106 @@
 
 ```
 Fudan-Campus-Info-System/
-├── database/                    # 数据库相关文件
-│   ├── schema.sql              # 建表脚本
-│   ├── seed_data.sql           # 初始数据
-│   ├── analytics_enhancement.sql  # 分析增强脚本（视图、存储过程、触发器、事件）
-│   ├── queries.sql             # 示例查询
-│   ├── test_report.md          # 数据库自我测试报告
-│   └── csv_templates/          # CSV批量导入模板
+├── database/                       # 数据库相关文件
+│   ├── schema.sql                 # 建表脚本（11张表）
+│   ├── seed_data.sql              # 初始测试数据（106条）
+│   ├── analytics_enhancement.sql  # 分析增强（视图、存储过程、触发器、事件）
+│   ├── queries.sql                # 示例查询
+│   ├── test_report.md             # 数据库自我测试报告
+│   └── csv_templates/             # CSV批量导入模板
 │       ├── README.md
 │       ├── buildings_example.csv
+│       ├── course_teachers_example.csv
 │       ├── courses_example.csv
 │       ├── events_example.csv
 │       ├── facilities_example.csv
 │       └── teachers_example.csv
-├── docs/                        # 项目文档
+├── docs/                           # 项目文档
 │   ├── ER图/
-│   │   └── ER图.png            # 实体关系图
+│   │   └── ER图.png               # 实体关系图
+│   ├── 需求分析/
+│   │   ├── 需求说明.md             # 需求分析文档
+│   │   └── 需求说明.pdf
 │   ├── 关系模式设计/
-│   │   ├── 关系模式设计.md      # 关系模式详细说明
+│   │   ├── 关系模式设计.md         # 关系模式详细说明
 │   │   └── 关系模式设计.pdf
 │   ├── 数据库逻辑结构/
-│   │   ├── 数据库逻辑结构.md    # 数据库逻辑结构说明
+│   │   ├── 数据库逻辑结构.md       # 数据库逻辑结构说明
 │   │   └── 数据库逻辑结构.pdf
-│   └── 需求分析/
-│       ├── 需求说明.md          # 需求分析文档
-│       └── 需求说明.pdf
+│   ├── 主要功能实现结果及阶段演示说明/  # 阶段演示材料
+│   │   ├── 主要功能实现结果及阶段演示说明.md
+│   │   ├── 主要功能实现结果及阶段演示说明.pdf
+│   │   ├── 智能问答.png
+│   │   ├── 推荐卡片.png
+│   │   └── ...
+│   └── 展示材料/
+│       └── 复旦百事通.pptx         # 项目展示PPT
 ├── src/
-│   ├── fudan-campus-backend/   # 后端项目（Spring Boot）
+│   ├── fudan-campus-backend/      # 后端项目（Spring Boot 4.0.6）
 │   │   ├── src/main/java/com/fudan/campusinfo/
-│   │   │   ├── entity/         # 实体类（10个）
-│   │   │   ├── repository/     # 数据访问层（10个Repository）
-│   │   │   ├── service/        # 业务逻辑层（含AI、推荐、CSV导入等）
-│   │   │   ├── controller/     # 控制器层（RESTful API）
-│   │   │   ├── config/         # 配置类（CORS等）
+│   │   │   ├── entity/            # 实体类（10个）
+│   │   │   │   ├── Campus.java
+│   │   │   │   ├── Building.java
+│   │   │   │   ├── Facility.java
+│   │   │   │   ├── Course.java
+│   │   │   │   ├── Teacher.java
+│   │   │   │   ├── CourseTeacher.java / CourseTeacherId.java
+│   │   │   │   ├── Event.java
+│   │   │   │   ├── Department.java
+│   │   │   │   ├── User.java
+│   │   │   │   └── QueryRecord.java
+│   │   │   ├── repository/        # 数据访问层（10个Repository）
+│   │   │   ├── service/           # 业务逻辑层
+│   │   │   │   ├── CampusInfoService.java
+│   │   │   │   ├── StatisticsService.java
+│   │   │   │   ├── RecommendationService.java
+│   │   │   │   ├── CSVImportService.java
+│   │   │   │   ├── AINaturalLanguageService.java
+│   │   │   │   └── NaturalLanguageQueryService.java
+│   │   │   ├── controller/        # 控制器层（RESTful API）
+│   │   │   │   ├── CampusInfoController.java
+│   │   │   │   └── RecommendationController.java
+│   │   │   ├── config/
+│   │   │   │   └── CorsConfig.java
 │   │   │   └── FudanCampusBackendApplication.java
 │   │   ├── src/main/resources/
-│   │   │   ├── application.properties  # 配置文件
+│   │   │   ├── application.properties
 │   │   │   └── application.example.properties
-│   │   ├── pom.xml             # Maven依赖配置
-│   │   └── mvnw                # Maven Wrapper
-│   └── fudan-campus-frontend/  # 前端项目（Vue 3）
+│   │   ├── src/test/java/com/fudan/campusinfo/
+│   │   │   ├── FudanCampusBackendApplicationTests.java
+│   │   │   └── service/
+│   │   │       └── AINaturalLanguageServiceTest.java
+│   │   ├── pom.xml                # Maven依赖配置
+│   │   ├── mvnw / mvnw.cmd        # Maven Wrapper
+│   │   └── .gitignore
+│   └── fudan-campus-frontend/     # 前端项目（Vue 3 + Vite）
 │       ├── src/
-│       │   ├── api/            # API调用模块
-│       │   │   └── index.js
-│       │   ├── views/          # 页面组件（9个视图）
-│       │   │   ├── HomeView.vue        # 首页（含AI问答、推荐）
-│       │   │   ├── CampusView.vue      # 校区建筑
-│       │   │   ├── FacilityView.vue    # 校园设施
-│       │   │   ├── CourseView.vue      # 课程教师
-│       │   │   ├── EventView.vue       # 校园活动
-│       │   │   ├── UserView.vue        # 个人中心
-│       │   │   ├── AdminView.vue       # 管理后台
-│       │   │   └── AnalyticsView.vue   # 数据分析
-│       │   ├── components/     # 公共组件
-│       │   ├── App.vue         # 主应用组件
-│       │   └── main.js         # 入口文件
+│       │   ├── api/
+│       │   │   └── index.js       # API调用封装（Axios）
+│       │   ├── assets/
+│       │   │   ├── base.css
+│       │   │   ├── main.css
+│       │   │   └── logo.svg
+│       │   ├── views/             # 页面组件（8个视图）
+│       │   │   ├── HomeView.vue         # 首页（含AI问答、推荐）
+│       │   │   ├── CampusView.vue       # 校区建筑
+│       │   │   ├── FacilityView.vue     # 校园设施
+│       │   │   ├── CourseView.vue       # 课程教师
+│       │   │   ├── EventView.vue        # 校园活动
+│       │   │   ├── UserView.vue         # 个人中心
+│       │   │   ├── AdminView.vue        # 管理后台
+│       │   │   └── AnalyticsView.vue    # 数据分析
+│       │   ├── App.vue            # 根组件
+│       │   └── main.js            # 入口文件
 │       ├── public/
-│       │   └── favicon.ico
-│       ├── package.json        # 前端依赖
-│       ├── vite.config.js      # Vite配置
+│       │   ├── favicon.ico
+│       │   └── images/
+│       │       └── carousel/      # 首页轮播背景图
+│       ├── package.json           # 前端依赖
+│       ├── vite.config.js         # Vite构建配置
 │       └── index.html
 ├── .gitignore
-├── README.md                   # 项目说明（本文件）
-└── 主要功能实现结果及阶段演示说明.md  # 功能实现与演示文档
+└── README.md                      # 项目说明（本文件）
 ```
 
 ---
@@ -495,4 +534,4 @@ npm run dev
 
 ---
 
-**最后更新**：2026年5月21日 - 新增AI智能问答和个性化推荐功能，完善UI/UX设计
+**最后更新**：2026年6月10日 - 最终提交版本，完善项目结构与文档
