@@ -97,7 +97,7 @@
 8. **course_teacher** - 课程-教师授课关系表（多对多中间表）
 9. **event** - 活动表
 10. **query_record** - 查询记录表
-11. **query_statistics_cache** - 查询统计缓存表
+11. **query_statistics_cache** - 查询统计缓存表（可选，分析增强脚本中创建）
 
 ### 关键设计特点
 
@@ -131,7 +131,7 @@
 ```
 Fudan-Campus-Info-System/
 ├── database/                       # 数据库相关文件
-│   ├── schema.sql                 # 建表脚本（11张表）
+│   ├── schema.sql                 # 建表脚本（10张核心表）
 │   ├── seed_data.sql              # 初始测试数据（106条）
 │   ├── analytics_enhancement.sql  # 分析增强（视图、存储过程、触发器、事件）
 │   ├── queries.sql                # 示例查询
@@ -534,4 +534,4 @@ npm run dev
 
 ---
 
-**最后更新**：2026年6月10日 - 最终提交版本，完善项目结构与文档
+**最后更新**：2026年6月10日 - 最终阶段：完成最终的README.md
